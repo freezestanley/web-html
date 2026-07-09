@@ -250,11 +250,44 @@ node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summa
 - 如有代理，需要的 `proxy.routes`
 - 已知限制
 
+#### 分块生成（强制）
+
+**禁止 LLM 一次性生成完整页面代码。** 必须通过 orchestrator 驱动分块生成：
+
+```bash
+# 查看剩余 chunk 计划
+node scripts/generate.js plan <projectRoot> <projectId>
+
+# 获取下一个 chunk 的 prompt（执行后写入对应文件）
+node scripts/generate.js next <projectRoot> <projectId>
+
+# 标记 chunk 完成（LLM 输出已写入磁盘后调用）
+node scripts/generate.js done <projectRoot> <projectId> <chunkId>
+
+# 查看当前进度
+node scripts/generate.js status <projectRoot> <projectId>
+```
+
+执行循环：
+
+1. 运行 `generate.js next` 获取当前 chunk prompt
+2. 按 prompt 生成代码，写入指定目标文件
+3. 运行 `generate.js done` 标记完成
+4. 重复直到 `next` 输出 `[DONE]`
+
+orchestrator 负责：
+- 拆分固定粒度 chunk plan（每块 ≤100 行）
+- 注入 `[PROGRESS]` 格式到每块 prompt
+- 记录 progress.json 支持断点续传
+- 联动 throttle-guard.js 感知限流状态
+
+`web-html` 只需转发 orchestrator 输出的 `[PROGRESS]` / `[BLOCKED]` / `[DONE]` 行。
+
 #### 进度转发与限流处理
 
 `web-html` 在委托期间必须：
 
-- 接收 `html-design` 上报的 `[PROGRESS]` / `[BLOCKED]` / `[DONE]` 文本行，原样转发给用户
+- 接收 orchestrator / `html-design` 上报的 `[PROGRESS]` / `[BLOCKED]` / `[DONE]` 文本行，原样转发给用户
 - 读取 `.webdesign/tasks/<projectId>/throttle-state.json` 感知限流状态
 - 限流降级时向用户呈现选项（等待 / 简化需求 / 切换模型），不自动决策
 - 超过 60s 无进度上报时主动询问，不静默等待

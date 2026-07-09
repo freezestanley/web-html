@@ -68,24 +68,35 @@ dist/
 
 ## 分模块增量交付规范
 
-`design-taste-frontend` 生成代码时，**禁止一次性输出完整页面**。必须按模块拆分、增量落盘：
+**禁止 LLM 自行决定分块粒度或一次性输出完整页面。** 分块由 `scripts/generate.js`（orchestrator）强制执行。
 
-### 推荐生成顺序
+### chunk plan（固定粒度）
 
-| 序号 | 模块 | 产出文件 | 上限 |
-|------|------|----------|------|
-| 1 | HTML 骨架 | `dist/index.html` | ≤150 行 |
-| 2 | CSS token + 基础样式 | `dist/assets/css/base.css` | ≤200 行 |
-| 3 | 核心内容区 | 追加 index.html + `css/content.css` | ≤300 行 |
-| 4 | 交互逻辑 | `dist/assets/js/app.js` | ≤300 行 |
-| 5 | 数据加载器（chunked 专用） | `dist/assets/js/loader.js` | ≤200 行 |
+| 序号 | chunk id | 产出文件 | 上限 |
+|------|----------|----------|------|
+| 1 | skeleton | `dist/index.html` | ≤80 行 |
+| 2 | base-css | `dist/assets/css/base.css` | ≤120 行 |
+| 3 | hero | 追加 index.html | ≤80 行 |
+| 4 | content | 追加 index.html | ≤100 行 |
+| 5 | chart | 追加 index.html | ≤80 行 |
+| 6 | footer | 追加 index.html | ≤40 行 |
+| 7 | finalize | `dist/assets/js/app.js` | ≤100 行 |
+
+### 执行方式
+
+```bash
+node scripts/generate.js next <projectRoot> <projectId>   # 获取当前块 prompt
+# → LLM 按 prompt 生成代码并写入目标文件
+node scripts/generate.js done <projectRoot> <projectId> <chunkId>  # 标记完成
+```
 
 ### 强制要求
 
-- 每个模块完成后**立即写入磁盘**，不攒在 context 里
-- 单模块产出 ≤300 行；超出则继续拆分子模块
-- 后续模块只追加或引用已有文件，不重写已完成模块
-- 修复验收问题时同样遵循增量原则，只改受影响模块
+- 每块 prompt 由 orchestrator 生成，LLM 不自行拆分
+- 每块完成后**立即运行 `generate.js done`**，不攒在 context 里
+- 单块产出超过上限时，orchestrator 自动拆分子块
+- 修复验收问题时同样通过 orchestrator，只重跑受影响 chunk
+- 断点续传：orchestrator 读取 progress.json 跳过已完成块
 
 ## 进度反馈协议
 
