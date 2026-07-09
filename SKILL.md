@@ -264,7 +264,9 @@ node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summa
 
 ### 4. CDP 验收
 
-必须用 CDP 打开产物检查：
+`html-design` 报告 `[DONE]` 后，`web-html` **必须立即主动**用 CDP 或浏览器打开 `dist/index.html`，不得等待用户指令、不得跳过、不得仅凭文件存在判定完成。
+
+检查项：
 
 - 页面可打开
 - 控制台无报错
@@ -277,8 +279,21 @@ node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summa
 
 ### 5. 用户预览确认
 
-必须向用户下发预览地址或可验证入口，并等待用户确认。
-用户未确认时不得进入发布。
+CDP 验收通过后，向用户输出**简短摘要 + 二选一询问**，禁止罗列模块清单、技术栈、Gate 流转过程等内部细节。
+
+输出模板（严格遵循，不扩展）：
+
+```text
+页面已生成并通过验收。预览：<url>
+确认发布，还是需要调整？
+```
+
+硬禁令：
+
+- 禁止输出 Gate 编号、进度标记、CDP 检查结果等技术过程
+- 禁止枚举模块清单、技术栈、CDN 依赖
+- 禁止在询问前附加超过 2 行的描述
+- 用户未明确确认时不得进入发布
 
 ### 6. 发布预检
 
