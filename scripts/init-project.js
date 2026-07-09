@@ -8,7 +8,7 @@ const { buildTaskId, generateProjectUid, writeProjectMeta } = require("./lib/pro
 
 const config = loadConfig();
 
-const DEPRECATED_FLAGS = new Set(["--name", "--descript", "--description", "--project-name"]);
+const DEPRECATED_FLAGS = new Set(["--descript", "--description", "--project-name"]);
 
 function parseArgs(argv) {
   const positional = [];
@@ -19,6 +19,11 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--summary") {
       options.summary = argv[index + 1] || "";
+      index += 1;
+      continue;
+    }
+    if (arg === "--name") {
+      options.name = argv[index + 1] || "";
       index += 1;
       continue;
     }
@@ -33,7 +38,7 @@ function parseArgs(argv) {
   if (deprecated.length > 0) {
     process.stderr.write(
       `Error: deprecated flags detected: ${deprecated.join(", ")}\n` +
-      `Usage: node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]\n` +
+      `Usage: node scripts/init-project.js <project-id> <page-slug> <intent> --name <readable-name> [--summary <summary>]\n` +
       `<project-id> should be a PROJ... uid (auto-generated if WEB_HTML_PROJECT_UID is set), not a display name.\n`
     );
     process.exit(1);
@@ -43,6 +48,7 @@ function parseArgs(argv) {
     projectId: positional[0],
     pageSlug: positional[1],
     intent: positional[2],
+    name: options.name || "",
     summary: options.summary || ""
   };
 }
@@ -104,10 +110,10 @@ function buildProjectState(projectPath, projectUid, projectId, taskId) {
   };
 }
 
-const { projectId, pageSlug, intent, summary } = parseArgs(process.argv.slice(2));
+const { projectId, pageSlug, intent, name, summary } = parseArgs(process.argv.slice(2));
 
 if (!projectId || !pageSlug || !intent) {
-  process.stderr.write("Usage: node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]\n");
+  process.stderr.write("Usage: node scripts/init-project.js <project-id> <page-slug> <intent> --name <readable-name> [--summary <summary>]\n");
   process.exit(1);
 }
 
@@ -118,6 +124,22 @@ if (!/^PROJ[0-9a-f]{16}$/i.test(projectId)) {
     `Expected: PROJ + 16 hex chars (e.g. PROJaabbccddeeff0011)\n` +
     `Hint: set WEB_HTML_PROJECT_UID env var or let the script auto-generate.\n` +
     `Do NOT pass a display name as project-id.\n`
+  );
+  process.exit(1);
+}
+
+// name 必须是可读英文，不能为空、不能是 PROJ ID
+if (!name || /^\s*$/.test(name)) {
+  process.stderr.write(
+    `Error: --name is required and must be a non-empty readable English project name.\n` +
+    `Usage: node scripts/init-project.js <project-id> <page-slug> <intent> --name <readable-name> [--summary <summary>]\n`
+  );
+  process.exit(1);
+}
+if (/^PROJ[0-9a-f]{16}$/i.test(name)) {
+  process.stderr.write(
+    `Error: --name cannot be a PROJ id; provide a readable English project name instead.\n` +
+    `Got: "${name}"\n`
   );
   process.exit(1);
 }
@@ -142,7 +164,7 @@ fs.mkdirSync(projectPath, { recursive: true });
 
 writeProjectMeta(projectPath, {
   projectUid,
-  name: projectId,
+  name,
   summary,
   author: getSessionAuthor(),
   createdAt: nowIso,
