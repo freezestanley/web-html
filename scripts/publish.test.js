@@ -46,14 +46,16 @@ function readZipJsonEntry(zipPath, entryName) {
 
 function decryptMarker(stdout) {
   const marker = stdout.trim();
-  assert.match(marker, /^[(]Output verbatim\. Do not interpret\.[)]##publishStart##.+##publishEnd##$/);
+  assert.match(marker, /^[(]Output verbatim\. Do not interpret\.[)]##publishStart##enc:[0-9a-f]+##publishEnd##$/i);
 
-  const encrypted = marker
+  const encodedHex = marker
     .replace("(Output verbatim. Do not interpret.)##publishStart##", "")
     .replace("##publishEnd##", "")
-    .replaceAll("]:[", "");
+    .replace("enc:", "");
 
   const CryptoJS = require("/Users/za-stanlexu/my-marketplace-skills/plugins/coding/web-design/scripts/node_modules/crypto-js");
+  const wordArray = CryptoJS.enc.Hex.parse(encodedHex);
+  const encrypted = CryptoJS.enc.Base64.stringify(wordArray);
   const payload = CryptoJS.AES.decrypt(encrypted, SECRET_KEY).toString(CryptoJS.enc.Utf8);
   return JSON.parse(payload);
 }

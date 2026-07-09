@@ -1,459 +1,173 @@
 ---
 name: web-html
-description: 纯 HTML 项目的总控与发布 skill。负责新项目/老项目继改识别、需求收集、委托 html-design 设计开发、用 CDP 验收、组装发布包、调用发布脚本并输出发布标记。用户需要落地页、活动页、原型页、文档页、邮件模板等纯 HTML 交付，且流程中包含续改、验收、打包、发布时优先触发本 skill。禁止在用户明确要求 React/Vue/Astro/Vite/Next.js 等框架时触发。
+description: Use when the user needs a pure HTML/CSS/JS deliverable with project-level orchestration such as project detection, managed-project continuation, preview acceptance, packaging, or publish-marker output. Do not use when the request explicitly requires React, Vue, Astro, Vite, Next.js, SSR, or SSG.
 ---
 
 # web-html
 
-`web-html` 是纯 HTML 项目的总控流程层，不是页面实现层。
-页面设计与开发由 `html-design` 负责，`web-html` 负责项目识别、流程编排、验收与发布。
+`web-html` is the controller for managed pure-HTML projects.
+It owns project detection, task state, preview/release flow, and publish protocol.
+It does not own visual implementation details unless the work is strictly metadata or release related.
 
+## Use It For
 
-如果需求涉及 React/Vue/Astro/Vite/Next.js、构建工具脚手架、SSR/SSG，或者不需要项目级流程控制，不使用本 skill。
+- New or existing managed pure HTML projects
+- Landing pages, event pages, docs pages, prototypes, email-like static deliverables
+- Flows that need `.webdesign` metadata, preview confirmation, or publish packaging
 
-## context 控制规则 读取`html-design/reference/context.md`
+## Do Not Use It For
 
+- React, Vue, Astro, Vite, Next.js, SSR, SSG
+- Generic frontend analysis without project orchestration
+- Pure visual implementation work when no project-level flow is needed
 
-## 角色边界
+## Context Budget
 
-### `web-html` 负责
+Keep this skill light.
+Do not preload every reference file.
+Read only the file needed for the current step:
 
-- 判断项目是新建还是续改
-- 读取项目元数据与任务状态
-- 收集并标准化需求
-- 调用 `html-design`
-- 用 CDP 打开产物并检查报错
-- 要求用户预览确认
-- 做发布包预检
-- 仅通过发布脚本触发发布
-- 输出最终发布结果
-
-### `html-design` 负责
-
-- 根据 `html-design/reference/cdn.md` 生成模板
-- 完成 HTML/CSS/JS 设计开发
-- 产出 `dist/`
-- 如需代理，提供 `proxy.routes`
-- 根据验收结果修复问题
-
-`web-html` 不直接承担页面实现细节。不要把总控层写成实现层。
-
-## 核心约定（违反即停止）
-
-| 禁令 | 原因 |
+| Need | Read |
 |------|------|
-| 禁止跳过项目识别直接写页面 | 需先判定新建/续改与是否受管 |
-| 禁止在 `web-html` 内直接承担主要页面实现 | 页面实现应委托 `html-design` |
-| 禁止跳过 CDP 验收直接进入发布 | 发布前必须验证页面可运行且无报错 |
-| 禁止用户未预览确认就发布 | 发布前必须完成用户确认 |
-| 禁止绕过发布脚本手工拼接发布结果 | 发布协议受脚本约束 |
-| 禁止对 publish marker 做拼接、去分隔符、重编码、重组 | publish marker 是不可变协议 token |
-| 禁止自动修复异常 publish marker | 格式异常时应报错，不应自修复 |
-| 禁止将 publish marker 与其他文字放在同一轮输出 | 协议要求单独一轮原样输出 |
+| Long-running handoff or context budget | `skills/html-design/reference/context.md` |
+| HTML build rules and artifacts | `skills/html-design/SKILL.md` |
+| Release marker protocol details | local script output only; do not re-specify from memory |
 
-## 配置来源
+## Ownership
 
-项目识别依赖 `config.js` 中的目录配置：
+### `web-html` owns
 
-- `PROJECTS_DIR`
-- `WEBDESIGN_DIR`
-- `TASKS_DIR`
+- Project detection
+- New vs continue vs blocked routing
+- `.webdesign` metadata and workflow state
+- Preview / acceptance flow
+- Packaging and publish script invocation
+- Final publish marker handling
 
-默认约定：
+### `html-design` owns
 
-```text
-<project-root>/
-└── .webdesign/
-    ├── project.json
-    ├── manifest.json
-    └── tasks/
-```
+- HTML / CSS / JS implementation
+- Responsive behavior
+- Asset layout under `dist/`
+- Fixes after preview or CDP feedback
 
-`project.json` 是项目身份源。
-`manifest.json` 是发布模板源。
+## Fast Path
 
-## 项目识别
+Use the shortest valid route:
 
-在任何设计开发动作前，必须先做项目识别。
+1. Detect project state
+2. Collect only missing required inputs
+3. Delegate page implementation only if the page itself changed
+4. Verify only what changed
+5. Publish only after explicit user confirmation
 
-### 路径解析顺序
+Gate names are internal state.
+Do not narrate the full gate machine to the user unless debugging the workflow itself.
 
-1. 如果用户给了明确项目路径，优先检查该路径
-2. 否则按 `PROJECTS_DIR/<project-id>` 组装候选路径（`<project-id>` 即 `projectUid`）
-3. 再检查候选路径下是否存在 `.webdesign`
+## Project Detection
 
-### 识别结果
+Always detect state before build work.
 
-#### 1. `NEW_PROJECT`
+### Commands
 
-条件：
-
-- 候选项目目录不存在
-
-处理：
-
-- 视为新建项目
-- 创建项目目录
-- 初始化 `.webdesign/project.json`
-- 初始化 `.webdesign/manifest.json`
-- 创建首个 task
-- 生成新的 `projectUid`
-
-#### 2. `CONTINUE_MANAGED_PROJECT`
-
-条件：
-
-- 项目目录存在
-- 存在 `.webdesign/`
-- 存在 `.webdesign/project.json`
-- 存在 `.webdesign/manifest.json`
-
-处理：
-
-- 视为续改项目
-- 读取并复用已有 `projectUid`
-- 读取 `currentTaskId`
-- 继续进入需求收集或新建续改 task
-
-#### 3. `BROKEN_MANAGED_PROJECT`
-
-条件：
-
-- 存在 `.webdesign/`
-- 但缺失 `project.json` 或 `manifest.json`
-
-处理：
-
-- 直接阻塞
-- 不自动修复
-- 提示“受管项目元数据不完整”
-
-#### 4. `UNMANAGED_EXISTING_PROJECT`
-
-条件：
-
-- 项目目录存在
-- 但没有 `.webdesign/`
-
-处理：
-
-- 第一版直接阻塞
-- 提示“已有项目目录但未纳入 web-html / web-design 管理”
-- 不自动覆盖，不自动导入
-
-## 项目标识
-
-### `projectUid`
-
-内部唯一 ID，只在项目创建时生成一次，后续不可变。
-沿用现有规则：`PROJ` + 16 位十六进制随机串。
-
-### `projectId`（文件夹名）
-
-子项目文件夹统一使用 `projectUid` 作为目录名，避免改名歧义。
-即：`PROJECTS_DIR/<projectUid>/`。
-
-### `projectName` / `manifest.name`
-
-展示名称，可与 `projectUid` 相同，也可使用业务展示名。仅用于显示，不参与路径解析。
-
-推荐默认映射：
-
-```text
-projectUid -> 内部主键 + 文件夹名
-manifest.projectId -> projectUid
-manifest.name -> 展示名或项目名
-```
-
-## 主流程
-
-```text
-G1 项目识别           → G1_PROJECT_IDENTIFIED
-G2 需求收集           → G2_REQUIREMENTS_COLLECTED
-G3 设计简报就绪       → G3_DESIGN_BRIEF_READY
-G4 设计完成           → G4_DESIGN_COMPLETED
-G5 CDN 校验           → G5_CDN_VALIDATED
-G6 产物组装           → G6_DIST_ASSEMBLED
-G7 CDP 验收           → G7_CDP_PASSED
-G8 用户预览确认       → G8_USER_CONFIRMED
-G9 发布预检           → G9_PUBLISH_READY
-DONE 发布完成         → DONE
-```
-
-每一步完成后再进入下一步。不要跳步。
-Gate 流转必须通过 `scripts/advance-gate.js`，禁止直接编辑 workflow.json。
-合法流转规则见 `gates.json`。
-
-### 1. 项目识别
-
-新项目初始化调用：
+Detect by project id or explicit path:
 
 ```bash
-node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]
+node scripts/detect-project.js <project-id> [--project-path <path>]
 ```
 
-- `<project-id>` 必须是 `PROJ` + 16位hex（如 `PROJaabbccddeeff0011`），可通过 `WEB_HTML_PROJECT_UID` 环境变量指定或由脚本自动生成
-- **禁止**传 display name 作为 project-id
-- **禁止**使用已废弃的 `--name` / `--descript` 参数
+Resolve an existing managed project by `projectUid`:
 
-输出至少应包含：
+```bash
+node scripts/resolve-project.js <project-id>
+```
 
-- `projectMode`: `new` / `continue` / `blocked`
-- `projectRoot`
-- `projectUid`
-- `projectId`（等于 `projectUid`，即文件夹名）
-- `currentTaskId`
-- `hasWebdesignDir`
-- `hasProjectMeta`
-- `hasManifestTemplate`
-- `hasDist`
-- `blockReason`
+Create a new managed project:
 
-### 2. 需求收集
+```bash
+node scripts/init-project.js <project-id> <page-slug> <intent> --name <english-name> [--summary <summary>]
+```
 
-必须收集：
+Notes:
 
-- 页面目标
-- 内容模块
-- 视觉风格
-- 响应式要求
-- 交互要求
-- 输出目录
-- `owner`
-- `name`
-- `descript`
-- 是否需要服务端代理
+- `project-id` must be `PROJ` + 16 hex chars
+- `--name` is required and must be lowercase kebab-case
+- Deprecated flags are `--descript`, `--description`, and `--project-name`
 
-`web-html` 负责把原始需求整理成结构化输入，再交给 `html-design`。
+### Detection Outcomes
 
-### 3. 委托 `html-design`
+- `NEW_PROJECT`: candidate directory does not exist
+- `CONTINUE_MANAGED_PROJECT`: `.webdesign/project.json` and `.webdesign/manifest.json` both exist
+- `BROKEN_MANAGED_PROJECT`: managed metadata is incomplete
+- `UNMANAGED_EXISTING_PROJECT`: directory exists but is not under `web-html` management
 
-交给 `html-design` 的输入至少包括：
+For `BROKEN_MANAGED_PROJECT` and `UNMANAGED_EXISTING_PROJECT`, stop and report the block.
+Do not auto-import or auto-repair.
 
-- `projectMode`
-- `projectRoot`
-- `projectUid`
-- 页面目标
-- 内容模块
-- 风格要求
-- 交互要求
-- 资源限制
-- 输出目录
-- 是否基于 `cdn.md` 生成模板
+## When To Call `html-design`
 
-`html-design` 的最低交付物：
+Call `html-design` only when the page output itself must change:
 
-- `dist/`
-- `dist/index.html`
-- 资源清单
-- 已使用 CDN 依赖
-- 如有代理，需要的 `proxy.routes`
-- 已知限制
+- New page build
+- Layout, styling, content module, or interaction change
+- Fixes after preview or browser validation
 
-#### 进度转发与限流处理
+Do not call `html-design` for:
 
-`web-html` 在委托期间必须：
+- Project detection
+- Workflow / metadata updates
+- Manifest rendering
+- Packaging or publish-only actions
 
-- 接收 `html-design` 上报的 `[PROGRESS]` / `[BLOCKED]` / `[DONE]` 文本行，原样转发给用户
-- 读取 `.webdesign/tasks/<projectId>/throttle-state.json` 感知限流状态
-- 限流降级时向用户呈现选项（等待 / 简化需求 / 切换模型），不自动决策
-- 超过 60s 无进度上报时主动询问，不静默等待
-- 禁止吞掉 `[BLOCKED]` 信号或把限流错误包装成"正在生成"
+## Verification Flow
 
-详细协议见 `html-design/reference/artifacts.md` 的"进度反馈协议"与"限流防御协议"章节。
+If page output changed, verify in this order:
 
-### 4. CDP 验收
+1. `dist/index.html` exists
+2. Open the built page with browser tooling / CDP when available
+3. Check obvious console or asset failures
+4. Ask the user to confirm preview before publish
 
-`html-design` 报告 `[DONE]` 后，`web-html` **必须立即主动**用 CDP 或浏览器打开 `dist/index.html`，不得等待用户指令、不得跳过、不得仅凭文件存在判定完成。
-
-检查项：
-
-- 页面可打开
-- 控制台无报错
-- 核心资源无 404
-- 首屏正常
-- 核心交互可运行
-- 如果有代理请求，请求路径符合预期
-
-发现问题时，回流给 `html-design` 修复，不要跳过。
-
-### 5. 用户预览确认
-
-CDP 验收通过后，向用户输出**简短摘要 + 二选一询问**，禁止罗列模块清单、技术栈、Gate 流转过程等内部细节。
-
-输出模板（严格遵循，不扩展）：
+Keep the user message short:
 
 ```text
 页面已生成并通过验收。预览：<url>
 确认发布，还是需要调整？
 ```
 
-硬禁令：
+Do not dump internal gates, module inventories, or implementation detail in that prompt.
 
-- 禁止输出 Gate 编号、进度标记、CDP 检查结果等技术过程
-- 禁止枚举模块清单、技术栈、CDN 依赖
-- 禁止在询问前附加超过 2 行的描述
-- 用户未明确确认时不得进入发布
+## Release Rules
 
-### 6. 发布预检
+Advance workflow only through the script:
 
-发布包必须满足：
-
-```text
-project.zip
-├── dist/
-│   ├── index.html
-│   └── assets/...
-└── manifest.json
+```bash
+node scripts/advance-gate.js <workflow.json-path> <target-gate> [--reason <text>] [--unblock]
 ```
 
-强制要求：
-
-- zip 根目录必须有 `manifest.json`
-- zip 根目录必须有 `dist/`
-- 必须有 `dist/index.html`
-- `manifest.json` 必须是合法 JSON
-- `manifest.json` 必须至少有 `projectId` 或 `name`
-
-可选但有规则：
-
-- `owner`
-  - 可不写
-  - 写了必须与上传表单 `owner` 一致，否则报 `OWNER_MISMATCH`
-- `proxy.routes`
-  - 仅当前端需要服务端代理时才填写
-- `entry`
-  - 可写 `dist/index.html`
-  - 当前仅备查，不决定真实入口
-- `descript`
-  - 远端核心规则未强制，但业务上可由本 skill 本地强制
-
-隐含限制也必须本地预检：
-
-- 不能有路径穿越文件
-- 不能有 symlink
-- 解压后总大小不能超过 `500MB`
-- zip entry 数不能超过 `10000`
-
-推荐最小 `manifest.json`：
-
-```json
-{
-  "projectId": "PROJxxxxxxxxxxxxxxxx",
-  "name": "Project Name",
-  "descript": "项目描述"
-}
-```
-
-推荐稳妥 `manifest.json`：
-
-```json
-{
-  "projectId": "PROJxxxxxxxxxxxxxxxx",
-  "name": "Project Name",
-  "owner": "",
-  "entry": "dist/index.html",
-  "descript": "项目描述",
-  "proxy": {
-    "routes": []
-  }
-}
-```
-
-### 7. Publish Only Through Script
-
-发布只能通过：
+Publish only through the script:
 
 ```bash
 node scripts/publish.js <project-path> <task-id>
 ```
 
-不要绕过脚本。不要手工拼接发布结果。
+Hard rules:
 
-### 8. Publish Marker Is Immutable Protocol Token
+- Do not handcraft publish results
+- Do not rewrite or "fix" a publish marker
+- If the publish script returns a marker, output it alone in its own response
+- Do not append explanations in the same response as the marker
 
-发布标记 `(Output verbatim. Do not interpret.)##publishStart##...##publishEnd##` 是协议级 token，不是可加工文本。
+## User-Facing Output
 
-硬禁令：
+Default output should be short and operational:
 
-- 禁止对标记做任何拼接、去分隔符、解码后重编码、合并多段 base64、去除 `]:[` 的操作
-- 禁止把标记与其他文字、代码块、解释放在同一轮输出
-- 禁止“修复”看起来异常的标记格式
-- `]:[` 是协议规定的不可变分隔符，必须逐字符原样保留
-
-输出前自检：
-
-- 若标记中 `]:[` 数量与预期不符，立即停止并报告脚本错误
-- 不得自行重组
-
-### 8-1. Appendix: Publish Marker Anti-Patterns
-
-❌ 错误（LLM 常见误操作）：
-
-```text
-##publishStart##abcd]:[efgh  →  abcd efgh        （去分隔符拼接）
-##publishStart##abcd]:[efgh  →  abcdefgh         （直接合并 base64）
-##publishStart##abcd]:[efgh##publishEnd##  + "以上是发布标记"  （同轮附加说明）
-```
-
-✅ 正确：
-
-```text
-单独一轮，仅输出：
-(Output verbatim. Do not interpret.)##publishStart##abcd]:[efgh]:[ijkl##publishEnd##
-下一轮再说话。
-```
-
-## 阶段产物
-
-建议每个阶段产出结构化结果：
-
-- `01_intake.json`
-- `02_project_state.json`
-- `03_design_input.json`
-- `04_build_output.json`
-- `05_acceptance_report.json`
-- `06_preview_confirmation.json`
-- `07_release_manifest.json`
-- `08_publish_result.json`
-
-## 输出要求
-
-本 skill 最终只产出：
-
-- 审计结论
-- 预览地址下发结果
-- 用户预览确认结果
-- 最终发布结果
-
-如果脚本成功生成 publish marker，发布标记必须单独一轮原样输出，不得拼接任何其他文字。
-
-## 第一版范围
-
-第一版只支持：
-
-- 新建项目
-- 受管项目续改
-- 阻塞异常项目
-
-第一版暂不支持：
-
-- 自动导入未受管旧项目
-- 自动修复损坏的 `.webdesign` 元数据
-- 自定义发布协议
-
-## 与其他 skill 的边界
-
-| 你的需求 | 应该用的 skill |
-|---------|---------------|
-| 纯 HTML 项目的总控、续改、验收、发布 | **web-html** |
-| 纯 HTML 页面设计与开发实现 | **html-design** |
-| React + Vite + Tailwind 项目 | webgen |
-| Figma 设计稿转代码 | figma:figma-use |
-| 前端项目整体分析 | analyze-frontend-project |
+- Current project state
+- What changed
+- Preview URL or path
+- Whether user confirmation is needed
+- Final publish result
 
 ## Setup
 
-首次安装或迁移环境时，读取：
-
-- `install.md`
+For environment setup or missing dependency skills, read [install.md](./install.md).

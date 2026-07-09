@@ -68,11 +68,11 @@
 
 ### 五、长任务分段 handoff 示例
 
-以 web-html gate 流转为例，每个 gate 阶段完成后检查 context：
-G2_REQUIREMENTS_COLLECTED → advance-gate.js → handoff 正确顺序
-G4_DESIGN_COMPLETED → advance-gate.js → handoff 正确顺序
-G6_DIST_ASSEMBLED → advance-gate.js → audit.md 写完 → handoff 正确顺序
-G8_USER_CONFIRMED → advance-gate.js → G9_PUBLISH_READY → handoff 正确顺序
+以 web-design SOP 为例，每个 gate 阶段完成后检查 context：
+G2 product.md 写完 → product-sync.js 执行完 → handoff正确顺序
+G4 design.md 写完 → handoff正确顺序
+G6 开发完成 + build 成功 → handoff正确顺序 → audit.md 写完 → handoff正确顺序
+G8 用户确认后 → 进入 G9 → handoff正确顺序
 
 **目标：每个 gate 之间的上下文是独立的，不要跨 gate 累积。**
 

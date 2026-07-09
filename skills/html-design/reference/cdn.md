@@ -1,54 +1,18 @@
 # CDN 资源链接
 
-本文件仅提供可用的远程 CDN 链接信息，**不是交付标准、不是白名单、不是强制约束**。
+本文件是链接速查，不是白名单，也不是合规判断依据。
 
-当 `design-taste-frontend` 产出需要外部依赖时，可优先从以下链接选取；如项目有自建 CDN、私有源或其他合规渠道，以项目实际约定为准。
+优先使用项目指定来源；没有指定时，可参考以下常用链接：
 
-## Tailwind CSS (Windify)
+- `windify`: `https://cdn.jsdelivr.net/npm/windify`
+- `chart.js`: `https://cdn.jsdelivr.net/npm/chart.js`
+- `lodash`: `https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js`
+- `axios`: `https://cdn.jsdelivr.net/npm/axios@1.15.0/dist/axios.min.js`
+- `lucide-static`: `https://unpkg.com/lucide-static@1.21.0/font/lucide.css`
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/windify"></script>
-<script>
-  window.addEventListener('load', () => windify());
-</script>
-```
+## 使用规则
 
-## Chart.js
-
-```text
-https://cdn.jsdelivr.net/npm/chart.js
-```
-
-## Lodash
-
-```text
-https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js
-```
-
-## Axios
-
-```text
-https://cdn.jsdelivr.net/npm/axios@1.15.0/dist/axios.min.js
-```
-
-## Lucide 图标字体
-
-引入样式表：
-
-```html
-<link rel="stylesheet" href="https://unpkg.com/lucide-static@1.21.0/font/lucide.css" />
-```
-
-使用图标（`icon-` 前缀类名）：
-
-```html
-<i class="icon-home"></i> 首页
-<i class="icon-user"></i> 个人中心
-```
-
-## 使用说明
-
-- 本文件仅作为"可用资源速查"，不构成合规校验依据
-- 选用时注意版本号与完整性，必要时核对 SRI
-- 如项目提供了专用 CDN / 私有源，优先使用项目指定来源
-- 无法获取合适资源时，记入交付物的「已知限制」章节
+- 记录库名、版本、URL
+- 必要时校验 SRI
+- 如改用私有源或其他 CDN，在交付说明里写明
+- 找不到合适来源时，记入已知限制
