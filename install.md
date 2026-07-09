@@ -16,7 +16,7 @@ npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-fro
 
 Only when you need shared global guidance, append:
 
-- `skills/html-design/reference/context.md` -> current workspace `AGENTS.md`
+- `reference/context.md` -> current workspace `AGENTS.md`
 
 Append only the needed section. Do not overwrite the whole file.
 

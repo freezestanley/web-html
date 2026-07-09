@@ -5,98 +5,98 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 
 # html-design
 
-`html-design` is the implementation layer for `web-html`.
-It ships pure HTML, CSS, and JS deliverables under `dist/`.
-Keep the default path lean: small and medium page changes should be handled directly here without automatically loading heavier design skills.
+`html-design` 是 `web-html` 的实现层。
+它在 `dist/` 下交付纯 HTML、CSS 与 JS 产物。
+保持默认路径轻量:中小型页面变更应直接在本技能内完成，不要自动加载更重的设计技能。
 
-## Default Path
+## 默认路径
 
-Use direct HTML/CSS/JS implementation when the task is any of:
+当任务属于以下任一类型时，使用直接 HTML/CSS/JS 实现:
 
-- Small or medium edits to an existing page
-- Responsive fixes
-- Copy, spacing, visual polish, or interaction fixes
-- Asset assembly and `dist/` cleanup
-- Browser-validation follow-up fixes
+- 对现有页面的小型或中型编辑
+- 响应式修复
+- 文案、间距、视觉打磨或交互修复
+- 资源组装与 `dist/` 清理
+- 浏览器校验后的跟进修复
 
-## Escalation Path
+## 升级路径
 
-Call `design-taste-frontend` only when at least one is true:
+仅在满足以下至少一个条件时调用 `design-taste-frontend`:
 
-- Net-new visual direction is needed
-- The user explicitly asks for bolder design exploration
-- The task is a major redesign rather than a bounded page edit
+- 需要全新的视觉方向
+- 用户明确要求更大胆的设计探索
+- 任务是整体重设计，而非有边界的页面编辑
 
-If the work is mostly orchestration, metadata, or release, stay in `web-html` and do not invoke this skill.
+若工作主要是编排、元数据或发布相关，请停留在 `web-html`，不要调用本技能。
 
-## Input Contract
+## 输入契约
 
-Expect these fields from `web-html` before building:
+构建前需从 `web-html` 接收以下字段:
 
 - `projectMode`
 - `projectRoot`
 - `projectUid`
-- page goal
-- content modules
-- visual direction
-- responsive requirement
-- interaction requirement
-- resource limits
-- output directory
-- whether proxy routes are needed
+- 页面目标
+- 内容模块
+- 视觉方向
+- 响应式需求
+- 交互需求
+- 资源限制
+- 输出目录
+- 是否需要代理路由
 
-If a required field is missing and it changes implementation decisions, ask `web-html` to fill the gap instead of inventing it.
+若必填字段缺失且会影响实现决策，应向 `web-html` 请求补齐，而不是自行臆造。
 
-## Output Contract
+## 输出契约
 
-Minimum delivery:
+最低交付项:
 
 - `dist/index.html`
-- assets referenced by the page
-- a short note of any external dependency used
-- `proxy.routes` when required, otherwise an empty array
-- known limitations if something is intentionally deferred
+- 页面引用的资源文件
+- 所用外部依赖的简短说明
+- 需要时提供 `proxy.routes`，否则返回空数组
+- 若有有意延后处理的事项，需列出已知限制
 
-## Build Flow
+## 构建流程
 
-1. Validate the input contract
-2. Choose the lean path or escalation path
-3. Build or patch the page under `dist/`
-4. Check responsive behavior for H5 and PC
-5. Return concise implementation notes back to `web-html`
+1. 校验输入契约
+2. 选择轻量路径或升级路径
+3. 在 `dist/` 下构建或修补页面
+4. 检查 H5 与 PC 端的响应式表现
+5. 向 `web-html` 返回简洁的实现说明
 
-## Reference Loading
+## Reference 按需加载
 
-Read references only when needed:
+仅在需要时读取 reference 文件:
 
-| Need | Read |
-|------|------|
-| Responsive baseline | [reference/responsive-ui.md](./reference/responsive-ui.md) |
-| Design parameter calibration | [reference/design-params.md](./reference/design-params.md) |
-| HTML / CSS / JS coding guardrails | [reference/code-standards.md](./reference/code-standards.md) |
-| Artifact layout and packaging expectations | [reference/artifacts.md](./reference/artifacts.md) |
-| External CDN lookup | [reference/cdn.md](./reference/cdn.md) |
-| Proxy route shape | [reference/proxy.md](./reference/proxy.md) |
-| Acceptance repair loop | [reference/acceptance.md](./reference/acceptance.md) |
-| Long task handoff / context budget | [reference/context.md](./reference/context.md) |
+| 需求 | 读取文件 |
+|------|----------|
+| 响应式基线 | [reference/responsive-ui.md](../../reference/responsive-ui.md) |
+| 设计参数校准 | [reference/design-params.md](../../reference/design-params.md) |
+| HTML / CSS / JS 编码护栏 | [reference/code-standards.md](../../reference/code-standards.md) |
+| 产物布局与打包预期 | [reference/artifacts.md](../../reference/artifacts.md) |
+| 外部 CDN 查询 | [reference/cdn.md](../../reference/cdn.md) |
+| 代理路由结构 | [reference/proxy.md](../../reference/proxy.md) |
+| 验收修复循环 | [reference/acceptance.md](../../reference/acceptance.md) |
+| 长任务接力 / 上下文预算 | [reference/context.md](../../reference/context.md) |
 
-Do not read all references up front.
+禁止一次性预加载所有 reference。
 
-## Guardrails
+## 护栏
 
-- Stay in pure HTML / CSS / JS
-- Do not introduce React, Vue, Svelte, or build-tool assumptions
-- Do not modify `.webdesign/project.json` or workflow state directly
-- Do not emit a publish marker
-- Do not inline large datasets into HTML when an external data file is more appropriate
-- Do not assume HTTP hosting if the deliverable is expected to work from `file://`
+- 仅使用纯 HTML / CSS / JS
+- 禁止引入 React、Vue、Svelte 或任何构建工具假设
+- 禁止直接修改 `.webdesign/project.json` 或工作流状态
+- 禁止产出发布标记
+- 当外部数据文件更合适时，禁止将大数据集内联到 HTML 中
+- 若交付物需支持 `file://` 协议，禁止假设 HTTP 托管环境
 
-## Completion Notes Back To `web-html`
+## 回传给 `web-html` 的完成说明
 
-Return only what the controller needs:
+仅返回控制器所需的信息:
 
-- what changed
-- where the output lives
-- any notable limitation
-- whether proxy routes are required
-- whether preview / browser validation should focus on a specific area
+- 本次变更内容
+- 产出所在位置
+- 任何值得注意的限制
+- 是否需要代理路由
+- 预览 / 浏览器校验是否需要聚焦特定区域

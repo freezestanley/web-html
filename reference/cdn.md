@@ -2,7 +2,7 @@
 
 本文件是链接速查，不是白名单，也不是合规判断依据。
 
-优先使用项目指定来源；没有指定时，可参考以下常用链接：
+优先使用项目指定来源；没有指定时，可参考以下常用链接:
 
 - `windify`: `https://cdn.jsdelivr.net/npm/windify`
 - `chart.js`: `https://cdn.jsdelivr.net/npm/chart.js`
