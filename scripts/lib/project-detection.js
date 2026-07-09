@@ -5,25 +5,25 @@ const { getManagedProjectFiles } = require("./project-index");
 
 const config = loadConfig();
 
-function resolveCandidateProjectPath({ projectName, projectPath, projectsDir = config.PROJECTS_DIR }) {
+function resolveCandidateProjectPath({ projectId, projectPath, projectsDir = config.PROJECTS_DIR }) {
   if (projectPath) {
     return path.resolve(projectPath);
   }
-  if (!projectName) {
-    throw new Error("projectName or projectPath is required");
+  if (!projectId) {
+    throw new Error("projectId or projectPath is required");
   }
-  return path.join(path.resolve(projectsDir), projectName);
+  return path.join(path.resolve(projectsDir), projectId);
 }
 
-function detectProjectState({ projectName, projectPath, projectsDir = config.PROJECTS_DIR } = {}) {
-  const projectRoot = resolveCandidateProjectPath({ projectName, projectPath, projectsDir });
+function detectProjectState({ projectId, projectPath, projectsDir = config.PROJECTS_DIR } = {}) {
+  const projectRoot = resolveCandidateProjectPath({ projectId, projectPath, projectsDir });
 
   const result = {
     projectType: "",
     projectMode: "",
     projectRoot,
     projectUid: "",
-    projectName: projectName || path.basename(projectRoot),
+    projectId: projectId || path.basename(projectRoot),
     currentTaskId: "",
     hasWebdesignDir: false,
     hasProjectMeta: false,
@@ -69,7 +69,7 @@ function detectProjectState({ projectName, projectPath, projectsDir = config.PRO
     projectType: "CONTINUE_MANAGED_PROJECT",
     projectMode: "continue",
     projectUid: projectMeta.projectUid || "",
-    projectName: projectMeta.name || result.projectName,
+    projectId: projectId || result.projectId,
     currentTaskId: projectMeta.currentTaskId || ""
   };
 }

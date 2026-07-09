@@ -23,20 +23,20 @@ function parseArgs(argv) {
   }
 
   return {
-    projectName: positional[0] || "",
+    projectId: positional[0] || "",
     projectPath: options.projectPath || ""
   };
 }
 
-const { projectName, projectPath } = parseArgs(process.argv.slice(2));
+const { projectId, projectPath } = parseArgs(process.argv.slice(2));
 
-if (!projectName && !projectPath) {
-  fail("Usage: node scripts/detect-project.js <project-name> [--project-path <path>]");
+if (!projectId && !projectPath) {
+  fail("Usage: node scripts/detect-project.js <project-id> [--project-path <path>]");
 }
 
 const projectsDir = process.env.WEB_HTML_PROJECTS_DIR
   ? path.resolve(process.env.WEB_HTML_PROJECTS_DIR)
   : undefined;
 
-const result = detectProjectState({ projectName, projectPath, projectsDir });
+const result = detectProjectState({ projectId, projectPath, projectsDir });
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

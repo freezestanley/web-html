@@ -78,7 +78,7 @@ description: 纯 HTML 项目的总控与发布 skill。负责新项目/老项目
 ### 路径解析顺序
 
 1. 如果用户给了明确项目路径，优先检查该路径
-2. 否则按 `PROJECTS_DIR/<project-name>` 组装候选路径
+2. 否则按 `PROJECTS_DIR/<project-id>` 组装候选路径（`<project-id>` 即 `projectUid`）
 3. 再检查候选路径下是否存在 `.webdesign`
 
 ### 识别结果
@@ -147,22 +147,19 @@ description: 纯 HTML 项目的总控与发布 skill。负责新项目/老项目
 内部唯一 ID，只在项目创建时生成一次，后续不可变。
 沿用现有规则：`PROJ` + 16 位十六进制随机串。
 
-### `projectName`
+### `projectId`（文件夹名）
 
-项目目录名 / 工程名。
+子项目文件夹统一使用 `projectUid` 作为目录名，避免改名歧义。
+即：`PROJECTS_DIR/<projectUid>/`。
 
-### `manifest.projectId`
+### `projectName` / `manifest.name`
 
-发布包里的项目标识。推荐默认直接使用 `projectUid`，避免改名歧义。
-
-### `manifest.name`
-
-展示名称，可与 `projectName` 相同，也可使用业务展示名。
+展示名称，可与 `projectUid` 相同，也可使用业务展示名。仅用于显示，不参与路径解析。
 
 推荐默认映射：
 
 ```text
-projectUid -> 内部主键
+projectUid -> 内部主键 + 文件夹名
 manifest.projectId -> projectUid
 manifest.name -> 展示名或项目名
 ```
@@ -170,26 +167,40 @@ manifest.name -> 展示名或项目名
 ## 主流程
 
 ```text
-1. 项目识别
-2. 需求收集
-3. 委托 html-design
-4. CDP 验收
-5. 用户预览确认
-6. 发布预检
-7. 脚本发布
-8. 输出最终发布结果
+G1 项目识别           → G1_PROJECT_IDENTIFIED
+G2 需求收集           → G2_REQUIREMENTS_COLLECTED
+G3 设计简报就绪       → G3_DESIGN_BRIEF_READY
+G4 设计完成           → G4_DESIGN_COMPLETED
+G5 CDN 校验           → G5_CDN_VALIDATED
+G6 产物组装           → G6_DIST_ASSEMBLED
+G7 CDP 验收           → G7_CDP_PASSED
+G8 用户预览确认       → G8_USER_CONFIRMED
+G9 发布预检           → G9_PUBLISH_READY
+DONE 发布完成         → DONE
 ```
 
 每一步完成后再进入下一步。不要跳步。
+Gate 流转必须通过 `scripts/advance-gate.js`，禁止直接编辑 workflow.json。
+合法流转规则见 `gates.json`。
 
 ### 1. 项目识别
+
+新项目初始化调用：
+
+```bash
+node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]
+```
+
+- `<project-id>` 必须是 `PROJ` + 16位hex（如 `PROJaabbccddeeff0011`），可通过 `WEB_HTML_PROJECT_UID` 环境变量指定或由脚本自动生成
+- **禁止**传 display name 作为 project-id
+- **禁止**使用已废弃的 `--name` / `--descript` 参数
 
 输出至少应包含：
 
 - `projectMode`: `new` / `continue` / `blocked`
 - `projectRoot`
 - `projectUid`
-- `projectName`
+- `projectId`（等于 `projectUid`，即文件夹名）
 - `currentTaskId`
 - `hasWebdesignDir`
 - `hasProjectMeta`
@@ -312,7 +323,7 @@ project.zip
 {
   "projectId": "PROJxxxxxxxxxxxxxxxx",
   "name": "Project Name",
-  "owner": "za-zhangchong",
+  "owner": "",
   "entry": "dist/index.html",
   "descript": "项目描述",
   "proxy": {
@@ -346,6 +357,24 @@ node scripts/publish.js <project-path> <task-id>
 
 - 若标记中 `]:[` 数量与预期不符，立即停止并报告脚本错误
 - 不得自行重组
+
+### 8-1. Appendix: Publish Marker Anti-Patterns
+
+❌ 错误（LLM 常见误操作）：
+
+```text
+##publishStart##abcd]:[efgh  →  abcd efgh        （去分隔符拼接）
+##publishStart##abcd]:[efgh  →  abcdefgh         （直接合并 base64）
+##publishStart##abcd]:[efgh##publishEnd##  + "以上是发布标记"  （同轮附加说明）
+```
+
+✅ 正确：
+
+```text
+单独一轮，仅输出：
+(Output verbatim. Do not interpret.)##publishStart##abcd]:[efgh]:[ijkl##publishEnd##
+下一轮再说话。
+```
 
 ## 阶段产物
 

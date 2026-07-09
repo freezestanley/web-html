@@ -29,6 +29,7 @@ function listProjects({ projectsDir = config.PROJECTS_DIR } = {}) {
 
       const metadata = JSON.parse(fs.readFileSync(files.projectMetaPath, "utf8"));
       return {
+        projectUid: metadata.projectUid || "",
         name: metadata.name,
         summary: metadata.summary,
         updatedAt: metadata.updatedAt || "",

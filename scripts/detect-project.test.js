@@ -7,13 +7,14 @@ const { spawnSync } = require("node:child_process");
 
 test("detect-project CLI prints managed project state as JSON", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "web-html-detect-project-"));
-  const projectDir = path.join(tempDir, "demo");
+  const projectId = "PROJaabbccddeeff0011";
+  const projectDir = path.join(tempDir, projectId);
   fs.mkdirSync(path.join(projectDir, ".webdesign"), { recursive: true });
   fs.writeFileSync(
     path.join(projectDir, ".webdesign", "project.json"),
     JSON.stringify(
       {
-        projectUid: "PROJaabbccddeeff0011",
+        projectUid: projectId,
         name: "demo",
         currentTaskId: "20260708-102030-homepage"
       },
@@ -23,10 +24,10 @@ test("detect-project CLI prints managed project state as JSON", () => {
   );
   fs.writeFileSync(
     path.join(projectDir, ".webdesign", "manifest.json"),
-    JSON.stringify({ projectId: "PROJaabbccddeeff0011", name: "Demo" }, null, 2)
+    JSON.stringify({ projectId, name: "Demo" }, null, 2)
   );
 
-  const result = spawnSync(process.execPath, ["scripts/detect-project.js", "demo"], {
+  const result = spawnSync(process.execPath, ["scripts/detect-project.js", projectId], {
     cwd: path.resolve(__dirname, ".."),
     env: { ...process.env, WEB_HTML_PROJECTS_DIR: tempDir },
     encoding: "utf8"
@@ -37,8 +38,8 @@ test("detect-project CLI prints managed project state as JSON", () => {
     projectType: "CONTINUE_MANAGED_PROJECT",
     projectMode: "continue",
     projectRoot: projectDir,
-    projectUid: "PROJaabbccddeeff0011",
-    projectName: "demo",
+    projectUid: projectId,
+    projectId,
     currentTaskId: "20260708-102030-homepage",
     hasWebdesignDir: true,
     hasProjectMeta: true,

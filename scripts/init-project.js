@@ -8,9 +8,12 @@ const { buildTaskId, generateProjectUid, writeProjectMeta } = require("./lib/pro
 
 const config = loadConfig();
 
+const DEPRECATED_FLAGS = new Set(["--name", "--descript", "--description", "--project-name"]);
+
 function parseArgs(argv) {
   const positional = [];
   const options = {};
+  const deprecated = [];
 
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -19,11 +22,25 @@ function parseArgs(argv) {
       index += 1;
       continue;
     }
+    if (DEPRECATED_FLAGS.has(arg)) {
+      deprecated.push(arg);
+      index += 1; // skip its value
+      continue;
+    }
     positional.push(arg);
   }
 
+  if (deprecated.length > 0) {
+    process.stderr.write(
+      `Error: deprecated flags detected: ${deprecated.join(", ")}\n` +
+      `Usage: node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]\n` +
+      `<project-id> should be a PROJ... uid (auto-generated if WEB_HTML_PROJECT_UID is set), not a display name.\n`
+    );
+    process.exit(1);
+  }
+
   return {
-    projectName: positional[0],
+    projectId: positional[0],
     pageSlug: positional[1],
     intent: positional[2],
     summary: options.summary || ""
@@ -61,9 +78,9 @@ function buildWorkflow(taskId, pageSlug, intent, nowIso) {
   };
 }
 
-function buildIntake(projectName, pageSlug, intent, summary) {
+function buildIntake(projectId, pageSlug, intent, summary) {
   return {
-    projectName,
+    projectId,
     pageSlug,
     intent,
     summary,
@@ -71,13 +88,13 @@ function buildIntake(projectName, pageSlug, intent, summary) {
   };
 }
 
-function buildProjectState(projectPath, projectUid, projectName, taskId) {
+function buildProjectState(projectPath, projectUid, projectId, taskId) {
   return {
     projectType: "NEW_PROJECT",
     projectMode: "new",
     projectRoot: projectPath,
     projectUid,
-    projectName,
+    projectId,
     currentTaskId: taskId,
     hasWebdesignDir: true,
     hasProjectMeta: true,
@@ -87,10 +104,21 @@ function buildProjectState(projectPath, projectUid, projectName, taskId) {
   };
 }
 
-const { projectName, pageSlug, intent, summary } = parseArgs(process.argv.slice(2));
+const { projectId, pageSlug, intent, summary } = parseArgs(process.argv.slice(2));
 
-if (!projectName || !pageSlug || !intent) {
-  process.stderr.write("Usage: node scripts/init-project.js <project-name> <page-slug> <intent> [--summary <summary>]\n");
+if (!projectId || !pageSlug || !intent) {
+  process.stderr.write("Usage: node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summary>]\n");
+  process.exit(1);
+}
+
+// projectId 必须是 PROJ + 16位hex 格式；防止误传 display name
+if (!/^PROJ[0-9a-f]{16}$/i.test(projectId)) {
+  process.stderr.write(
+    `Error: invalid project-id format: "${projectId}"\n` +
+    `Expected: PROJ + 16 hex chars (e.g. PROJaabbccddeeff0011)\n` +
+    `Hint: set WEB_HTML_PROJECT_UID env var or let the script auto-generate.\n` +
+    `Do NOT pass a display name as project-id.\n`
+  );
   process.exit(1);
 }
 
@@ -101,7 +129,7 @@ const projectUid = process.env.WEB_HTML_PROJECT_UID || generateProjectUid();
 const projectsDir = process.env.WEB_HTML_PROJECTS_DIR
   ? path.resolve(process.env.WEB_HTML_PROJECTS_DIR)
   : config.PROJECTS_DIR;
-const projectPath = path.join(projectsDir, projectName);
+const projectPath = path.join(projectsDir, projectId);
 const webdesignDir = path.join(projectPath, config.WEBDESIGN_DIR);
 const taskDir = path.join(webdesignDir, config.TASKS_DIR, taskId);
 
@@ -114,7 +142,7 @@ fs.mkdirSync(projectPath, { recursive: true });
 
 writeProjectMeta(projectPath, {
   projectUid,
-  name: projectName,
+  name: projectId,
   summary,
   author: getSessionAuthor(),
   createdAt: nowIso,
@@ -126,7 +154,7 @@ writeProjectMeta(projectPath, {
 
 writeJsonFile(path.join(webdesignDir, "manifest.json"), buildManifestTemplate());
 writeJsonFile(path.join(taskDir, "workflow.json"), buildWorkflow(taskId, pageSlug, intent, nowIso));
-writeJsonFile(path.join(taskDir, "01_intake.json"), buildIntake(projectName, pageSlug, intent, summary));
-writeJsonFile(path.join(taskDir, "02_project_state.json"), buildProjectState(projectPath, projectUid, projectName, taskId));
+writeJsonFile(path.join(taskDir, "01_intake.json"), buildIntake(projectId, pageSlug, intent, summary));
+writeJsonFile(path.join(taskDir, "02_project_state.json"), buildProjectState(projectPath, projectUid, projectId, taskId));
 
 process.stdout.write(`${JSON.stringify({ projectPath, taskId, projectUid }, null, 2)}\n`);

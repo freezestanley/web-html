@@ -43,36 +43,39 @@ function writeManagedProject(projectPath, { projectMeta = true, manifestTemplate
 
 test("detectProjectState returns NEW_PROJECT when candidate dir does not exist", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "web-html-project-detect-"));
-  const result = detectProjectState({ projectName: "demo", projectsDir: tempDir });
+  const result = detectProjectState({ projectId: "PROJaabbccddeeff0011", projectsDir: tempDir });
 
   assert.equal(result.projectType, "NEW_PROJECT");
   assert.equal(result.projectMode, "new");
   assert.equal(result.hasWebdesignDir, false);
-  assert.equal(result.projectRoot, path.join(tempDir, "demo"));
+  assert.equal(result.projectRoot, path.join(tempDir, "PROJaabbccddeeff0011"));
 });
 
 test("detectProjectState returns CONTINUE_MANAGED_PROJECT for a complete managed project", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "web-html-project-detect-"));
-  const projectPath = path.join(tempDir, "demo");
+  const projectId = "PROJaabbccddeeff0011";
+  const projectPath = path.join(tempDir, projectId);
   writeManagedProject(projectPath);
 
-  const result = detectProjectState({ projectName: "demo", projectsDir: tempDir });
+  const result = detectProjectState({ projectId, projectsDir: tempDir });
 
   assert.equal(result.projectType, "CONTINUE_MANAGED_PROJECT");
   assert.equal(result.projectMode, "continue");
   assert.equal(result.hasWebdesignDir, true);
   assert.equal(result.hasProjectMeta, true);
   assert.equal(result.hasManifestTemplate, true);
-  assert.equal(result.projectUid, "PROJaabbccddeeff0011");
+  assert.equal(result.projectUid, projectId);
+  assert.equal(result.projectId, projectId);
   assert.equal(result.currentTaskId, "20260708-102030-homepage");
 });
 
 test("detectProjectState returns BROKEN_MANAGED_PROJECT when managed metadata is incomplete", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "web-html-project-detect-"));
-  const projectPath = path.join(tempDir, "broken");
+  const projectId = "PROJbroken00000000001";
+  const projectPath = path.join(tempDir, projectId);
   writeManagedProject(projectPath, { projectMeta: true, manifestTemplate: false });
 
-  const result = detectProjectState({ projectName: "broken", projectsDir: tempDir });
+  const result = detectProjectState({ projectId, projectsDir: tempDir });
 
   assert.equal(result.projectType, "BROKEN_MANAGED_PROJECT");
   assert.equal(result.projectMode, "blocked");
@@ -84,10 +87,11 @@ test("detectProjectState returns BROKEN_MANAGED_PROJECT when managed metadata is
 
 test("detectProjectState returns UNMANAGED_EXISTING_PROJECT for an existing unmanaged directory", () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "web-html-project-detect-"));
-  const projectPath = path.join(tempDir, "legacy");
+  const projectId = "PROJlegacy00000000001";
+  const projectPath = path.join(tempDir, projectId);
   fs.mkdirSync(projectPath, { recursive: true });
 
-  const result = detectProjectState({ projectName: "legacy", projectsDir: tempDir });
+  const result = detectProjectState({ projectId, projectsDir: tempDir });
 
   assert.equal(result.projectType, "UNMANAGED_EXISTING_PROJECT");
   assert.equal(result.projectMode, "blocked");
