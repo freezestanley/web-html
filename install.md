@@ -1,9 +1,8 @@
 ### 1. Install prerequisite skills
 
 安装依赖技能：
-- `npx skills add anthropics/skills --skill frontend-design`
-- `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"`
-- html-design skill 在文件夹目录 `html-design/SKILL.md`
+- html-design skill 在文件夹目录 `skills/stml-design/SKILL.md`引用失败,可用安装命令`npx skills add anthropics/skills --skill frontend-design`
+- design-taste-frontend skill 在文件夹目录 `skills/design-taste-frontend/SKILL.md`引用失败,可用安装命令`npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"`
 
 ### 2. Sync local support files
 
