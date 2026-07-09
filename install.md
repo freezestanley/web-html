@@ -32,3 +32,7 @@ npm install
 
 - 把 `config.js` 中的 `PROJECTS_DIR` 指向当前 workspace 下的 `projects` 目录
 - 确认模板、任务目录等配置可被脚本读取
+
+### 5. Gateway restart
+
+- gateway restart 让skill 生效
