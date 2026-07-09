@@ -249,6 +249,18 @@ node scripts/init-project.js <project-id> <page-slug> <intent> [--summary <summa
 - 如有代理，需要的 `proxy.routes`
 - 已知限制
 
+#### 进度转发与限流处理
+
+`web-html` 在委托期间必须：
+
+- 接收 `html-design` 上报的 `[PROGRESS]` / `[BLOCKED]` / `[DONE]` 文本行，原样转发给用户
+- 读取 `.webdesign/tasks/<projectId>/throttle-state.json` 感知限流状态
+- 限流降级时向用户呈现选项（等待 / 简化需求 / 切换模型），不自动决策
+- 超过 60s 无进度上报时主动询问，不静默等待
+- 禁止吞掉 `[BLOCKED]` 信号或把限流错误包装成"正在生成"
+
+详细协议见 `html-design/reference/artifacts.md` 的"进度反馈协议"与"限流防御协议"章节。
+
 ### 4. CDP 验收
 
 必须用 CDP 打开产物检查：

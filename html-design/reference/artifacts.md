@@ -110,6 +110,56 @@ dist/
 - 禁止把中间态代码留在 context 不落盘
 - 禁止用"正在生成…"等模糊表述代替结构化进度
 
+## 限流防御协议
+
+LLM 调用可能触发上游速率限制（429 / 529 / "rate increased too quickly"）。`html-design` 与 `web-html` 必须协同执行以下防御策略。
+
+### 请求节奏控制
+
+| 策略 | 规则 |
+|------|------|
+| 指数退避重试 | 首次限流等待 2s，之后 4s → 8s → 16s，上限 60s；最多重试 4 次 |
+| 块间冷却 | 每完成一个模块后主动间隔 1-2s 再发起下一块请求 |
+| 串行约束 | 禁止并行生成多模块；强制串行 + 间隔 |
+| 动态拆块 | 检测到限流后，下一模块自动拆分为更小子块（≤150 行） |
+
+### 降级触发条件
+
+- 连续 **2 次**限流 → 切换简化模板 + 块间冷却升至 3s
+- 重试 **4 次**仍失败 → 暂停生成，向用户报告并提供选项：等待 / 简化需求 / 切换模型
+- 总耗时超过 **5min** → 主动询问是否继续或拆分多页
+
+### 状态持久化
+
+限流状态写入 `.webdesign/tasks/<projectId>/throttle-state.json`：
+
+```json
+{
+  "consecutiveThrottles": 0,
+  "totalRetries": 0,
+  "currentCooldownMs": 1000,
+  "lastThrottleAt": "2026-07-09T10:30:00Z",
+  "degradedMode": false
+}
+```
+
+resume 时读取该文件，避免重置冷却计时。
+
+### 进度行联动
+
+限流期间进度行必须携带状态标识：
+
+```text
+[PROGRESS] 3/5 modules · hero written · 60% (⚠️ throttled, retry 2/4, cooldown 8s)
+[BLOCKED] rate limit hit 4x, paused — options: wait / simplify / switch model
+```
+
+### 禁止项
+
+- 禁止限流后立即重发请求（无退避）
+- 禁止在循环中无间隔连续调用 LLM
+- 禁止吞掉限流错误静默重试超过 4 次
+- 禁止降级模式下仍使用完整模板
 
 
 每次交付必须在对话中明确列出：
