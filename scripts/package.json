@@ -2,5 +2,8 @@
   "name": "web-html-scripts",
   "version": "1.0.0",
   "private": true,
-  "description": "Scripts for web-html plugin"
+  "description": "Scripts for web-html plugin",
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  }
 }
