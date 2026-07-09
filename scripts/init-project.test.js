@@ -10,7 +10,7 @@ test("init-project creates a managed web-html project with .webdesign metadata",
   const projectId = "PROJaabbccddeeff0011";
   const result = spawnSync(
     process.execPath,
-    ["scripts/init-project.js", projectId, "homepage", "create", "--summary", "Demo project"],
+    ["scripts/init-project.js", projectId, "homepage", "create", "--name", "demo-project", "--summary", "Demo project"],
     {
       cwd: path.resolve(__dirname, ".."),
       env: {
@@ -36,7 +36,7 @@ test("init-project creates a managed web-html project with .webdesign metadata",
     fs.readFileSync(path.join(projectPath, ".webdesign", "project.json"), "utf8")
   );
   assert.equal(projectMeta.projectUid, projectId);
-  assert.equal(projectMeta.name, projectId);
+  assert.equal(projectMeta.name, "demo-project");
   assert.equal(projectMeta.summary, "Demo project");
   assert.equal(projectMeta.author, "902");
   assert.equal(projectMeta.currentTaskId, taskId);

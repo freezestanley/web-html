@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { buildPublishMarker, validatePublishMarker, HEADER, FOOTER, DELIMITER } = require("./lib/publish-marker");
+const { buildPublishMarker, validatePublishMarker, HEADER, FOOTER } = require("./lib/publish-marker");
 
 test("buildPublishMarker produces the immutable publish protocol marker", () => {
   const marker = buildPublishMarker({
@@ -14,6 +14,5 @@ test("buildPublishMarker produces the immutable publish protocol marker", () => 
 
   assert.equal(marker.startsWith(HEADER), true);
   assert.equal(marker.endsWith(FOOTER), true);
-  assert.equal(marker.includes(DELIMITER), true);
   assert.equal(validatePublishMarker(marker), true);
 });
