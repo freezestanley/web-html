@@ -85,9 +85,11 @@ const CryptoJS = require('crypto-js');
       descript,
     });
 
-    // 保留 salt 的 OpenSSL 格式 → Hex（比纯 ciphertext hex 更安全，密钥派生不变）
+    // .toString() 默认输出 Base64(Salted__ + salt + ciphertext)
+    // 先解回 WordArray 再转 Hex，保留 salt 供前端 AES.decrypt(wordArray, key) 直接使用
     const encrypted = CryptoJS.AES.encrypt(payload, SECRET_KEY);
-    const hexBody = encrypted.toString(CryptoJS.enc.Hex);
+    const wordArray = CryptoJS.enc.Base64.parse(encrypted.toString());
+    const hexBody = CryptoJS.enc.Hex.stringify(wordArray);
     const marker = `${HEADER}enc:${hexBody}${FOOTER}`;
 
     validatePublishMarker(marker);
