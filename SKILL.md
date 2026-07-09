@@ -8,7 +8,6 @@ description: 纯 HTML 项目的总控与发布 skill。负责新项目/老项目
 `web-html` 是纯 HTML 项目的总控流程层，不是页面实现层。
 页面设计与开发由 `html-design` 负责，`web-html` 负责项目识别、流程编排、验收与发布。
 
-html-design skill在文件夹目录 `html-design/SKILL.md`别再说找不到
 
 如果需求涉及 React/Vue/Astro/Vite/Next.js、构建工具脚手架、SSR/SSG，或者不需要项目级流程控制，不使用本 skill。
 
@@ -442,4 +441,4 @@ node scripts/publish.js <project-path> <task-id>
 
 首次安装或迁移环境时，读取：
 
-- `html-design/install.md`
+- `install.md`

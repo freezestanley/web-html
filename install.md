@@ -3,6 +3,7 @@
 如缺少依赖技能，再安装：
 - `npx skills add anthropics/skills --skill frontend-design`
 - `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"`
+- html-design skill 在文件夹目录 `html-design/SKILL.md`
 
 ### 2. Sync local support files
 
