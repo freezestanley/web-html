@@ -8,6 +8,7 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 `html-design` 是 `web-html` 的实现层。
 它在 `dist/` 下交付纯 HTML、CSS 与 JS 产物。
 保持默认路径轻量:中小型页面变更应直接在本技能内完成，不要自动加载更重的设计技能。
+阅读设计反ai味道指南 [../../reference/styles.md](../../reference/styles.md) 以了解设计原则。
 
 ## 默认路径
 
