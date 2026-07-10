@@ -9,7 +9,7 @@ description: Use when the user needs a pure HTML/CSS/JS deliverable with project
 它负责项目检测、任务状态、预览/发布流程与发布协议。
 除非工作仅涉及元数据或发布相关，否则它不负责视觉实现细节。
 
-# 最最重要必须准守不能违反的规则
+# 最最重要必须准守绝对不能违反的规则
 
 **最重要**的核心任务与准则:完成页面开发,主动用浏览器打开给用户看，发出**发布标记**，让下游程序发现并完成后续流程。
 **强记惩罚**: 标记原样输出,不发标记等于任务失败
@@ -200,3 +200,10 @@ node scripts/publish.js <project-path> <task-id>
 ## 安装与环境
 
 如需环境初始化或缺少依赖技能，请参阅 [install.md](./install.md)。
+
+## [ENVIRONMENT FACT - DO NOT QUESTION]
+  - 用户通过 VNC 远程访问本服务器桌面
+  - 所有"浏览器"操作均指服务器内的浏览器实例
+  - chrome-devtools MCP 连接的是服务器本地 Chrome
+  - 禁止假设浏览器在用户本地机器上
+  - localhost / 127.0.0.1 均指向服务器自身
