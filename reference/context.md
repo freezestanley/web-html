@@ -38,7 +38,7 @@
 3. **必须**在摘要块之后追加以下固定提示语，一字不差:
    > 存档完毕。执行 `/clear` 后，在新对话中回复「继续任务」即可恢复进度。
 4. 调用 `/compact` 或 `/clear` 清理上下文
-5. 从 handoff 摘要恢复，继续下一步
+5. 读取`CONTEXT_SAVE` 摘要恢复任务，继续下一步
 
 **`CONTEXT_SAVE` 格式:**
 ```
@@ -65,16 +65,6 @@
 | 生成的文件或源码 | 5-50K+ | 生成的文件或源码，属于"已用完即可丢弃"的内容，用的时候 read 读取就行 |
 
 必须准守瘦身规范,违反则任务失败,执行HANDOFF正确顺序
-
-### 五、长任务分段 handoff 示例
-
-以 web-design SOP 为例，每个 gate 阶段完成后检查 context:
-G2 product.md 写完 → product-sync.js 执行完 → handoff正确顺序
-G4 design.md 写完 → handoff正确顺序
-G6 开发完成 + build 成功 → handoff正确顺序 → audit.md 写完 → handoff正确顺序
-G8 用户确认后 → 进入 G9 → handoff正确顺序
-
-**目标:每个 gate 之间的上下文是独立的，不要跨 gate 累积。**
 
 # web-html skill 使用规则
 
