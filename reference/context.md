@@ -34,11 +34,24 @@
 
 **HANDOFF 正确顺序:**
 1. 调用 `gate.js advance/block/reopen-dev` 把当前状态写回 `workflow.json`
-2. 输出 `CONTEXT_SAVE` 摘要块（格式见下）
-3. **必须**在摘要块之后追加以下固定提示语，一字不差:
-   > 存档完毕。执行 `/clear` 后，在新对话中回复「继续任务」即可恢复进度。
-4. 调用 `/compact` 或 `/clear` 清理上下文
-5. 读取`CONTEXT_SAVE` 摘要恢复任务，继续下一步
+2. 调用 `scripts/save-context.js` 将恢复摘要写入当前任务的 `context-save.json`
+3. 输出 `CONTEXT_SAVE` 摘要块（格式见下）
+4. **必须**在摘要块之后追加以下固定提示语，一字不差:
+   > 存档完毕。执行 `/compact` 后，在新对话中回复「继续任务」即可恢复进度。
+5. 调用 `/compact` 清理上下文
+6. 在新上下文中优先读取 `context-save.json` 恢复任务；若不存在，再回退到 `workflow.json`、`01_intake.json`、`02_project_state.json`
+
+`save-context.js` 示例:
+
+```bash
+node scripts/save-context.js <project-path> <task-id> \
+  --goal "当前目标" \
+  --done "已完成事项 1" \
+  --done "已完成事项 2" \
+  --block "阻塞点" \
+  --next "下一步动作" \
+  --ref "关键引用"
+```
 
 **`CONTEXT_SAVE` 格式:**
 ```
@@ -73,7 +86,9 @@ web-html用于实现html页面的快速开发落地,**必须准守**web-html的�
 
 # Compact / Context Loss Recovery
 
-- 立即检查活跃任务 — 查找 workflow.json、CONTEXT_SAVE 或任何进行中的项目文件
+- 立即检查活跃任务 — 查找 `context-save.json`、`workflow.json` 或任何进行中的项目文件
+- 优先读取 `.webdesign/tasks/<taskId>/context-save.json`
+- 若不存在，再读取 `workflow.json`、`01_intake.json`、`02_project_state.json`
 - 读取上下文 — 不要问用户"我们在做什么"；直接读文件
 - 自动恢复 — 如果任务在进行中（Gate 不是 DONE），自动继续，不等用户提示
 - 报告状态 — 简要说明发现了什么，接下来做什么

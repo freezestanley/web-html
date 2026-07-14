@@ -1,6 +1,7 @@
 ---
 name: web-html
 description: Use when the user needs a pure HTML/CSS/JS deliverable with project-level orchestration such as project detection, managed-project continuation, preview acceptance, packaging, or publish-marker output. Do not use when the request explicitly requires React, Vue, Astro, Vite, Next.js, SSR, or SSG.
+适用于:html页面的快速生成 不适用于:react/vue等指定技术栈的项目
 ---
 
 # web-html
@@ -60,13 +61,42 @@ description: Use when the user needs a pure HTML/CSS/JS deliverable with project
 始终走最短有效路径:
 
 1. 检测项目状态
-2. 仅收集缺失的必要输入
-3. 仅在页面本身发生变化时才委派页面实现
-4. 仅验证变更部分
-5. 仅在用户明确确认后才发布
+2. 若是续建或恢复场景，先恢复任务上下文
+3. 仅收集缺失的必要输入
+4. 仅在页面本身发生变化时才委派页面实现
+5. 仅验证变更部分
+6. 仅在用户明确确认后才发布
 
 Gate 名称是内部状态。
 除非在调试工作流本身，否则不要向用户叙述完整的 gate 机制。
+
+## 任务恢复（强制）
+
+出现以下任一情况时，必须先恢复任务上下文，禁止先问用户“做到哪里了”：
+
+- `detect-project` 结果为 `CONTINUE_MANAGED_PROJECT`
+- 用户明确表示“继续任务 / 恢复 / 接着做”
+- 当前任务 `workflow.json.currentGate` 不是 `DONE`
+
+恢复命令：
+
+```bash
+node scripts/resume-task.js <project-id>
+```
+
+或在已知路径时：
+
+```bash
+node scripts/resume-task.js --project-path <project-path>
+```
+
+恢复顺序是硬规则：
+
+1. 读取 `.webdesign/project.json` 的 `currentTaskId`
+2. 读取对应任务的 `workflow.json`
+3. 优先读取 `.webdesign/tasks/<taskId>/context-save.json`
+4. 若不存在 `context-save.json`，回退到 `01_intake.json` 与 `02_project_state.json`
+5. 若 gate 不是 `DONE`，直接继续下一步；不要等待用户再次描述背景
 
 ## 项目检测
 

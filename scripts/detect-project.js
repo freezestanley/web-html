@@ -8,6 +8,16 @@ function fail(message) {
   process.exit(1);
 }
 
+function looksLikePath(value) {
+  if (!value) return false;
+  return (
+    value.startsWith("/") ||
+    value.startsWith("./") ||
+    value.startsWith("../") ||
+    value.includes(path.sep)
+  );
+}
+
 function parseArgs(argv) {
   const positional = [];
   const options = {};
@@ -22,10 +32,12 @@ function parseArgs(argv) {
     positional.push(arg);
   }
 
-  return {
-    projectId: positional[0] || "",
-    projectPath: options.projectPath || ""
-  };
+  const first = positional[0] || "";
+  // --project-path flag wins when explicitly provided
+  const projectPath = options.projectPath || (looksLikePath(first) ? first : "");
+  const projectId = options.projectPath ? "" : (looksLikePath(first) ? "" : first);
+
+  return { projectId, projectPath };
 }
 
 const { projectId, projectPath } = parseArgs(process.argv.slice(2));

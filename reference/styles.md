@@ -46,10 +46,11 @@
 ## 6. 色彩与光影 (Color & Lighting)
 *避免AI默认的“深蓝太空+紫色渐变”，追求极致克制与跳跃感。*
 
-- ✅ **极简调色板 (Limited Palette)：** 规定全页仅用 3 种主色。深色模式请用深灰、墨绿、磨砂黑代替通常的深蓝色。
-- ✅ **单一强调色 (Single Accent)：** 全页只保留一种高饱和度强调色（如用来突出关键数据或按钮），其余元素做去饱和（灰度）处理。
-- ✅ **柔和微光 (Soft Ambient Light)：** 仅用极其克制的、大面积的柔和环境光，摒弃锐利的点光源。
-- ❌ **蓝-紫-青 三色科技渐变；多种霓虹色混杂；焦点光源太亮过于刺眼。**
+- ✅ 丰色却节制的调色板 (Rich Yet Disciplined Palette)： 全页可使用 5–7 种有明确来源的主色（如大地色、矿物色、古典颜料色），但每个区块内维持色彩的低冲突感。深色模式用深茄紫、炭灰、熟褐、墨绿或玄武岩黑替代深蓝。
+- ✅ 双强调色系统 (Dual Accent)： 可使用一暖一冷两个高饱和强调色（例如琥珀黄 + 孔雀蓝，或朱砂红 + 铜绿），分别承担不同信息层级的高亮，但绝不出现第三种霓虹色。
+- ✅ 自然色彩过渡 (Organic Gradients)： 如需渐变，使用类似水彩晕染、岩石纹理或黄昏天空的多色微过渡，拒绝平滑的纯色到纯色机械渐变。
+- ✅ 柔和环境光 (Soft Ambient Light)： 仅用极其克制的、大面积柔和环境光，可为暖色或冷色倾向，但绝无锐利点光源。
+- ❌ 蓝-紫-青 三色科技渐变；多种霓虹色混杂；刺眼的纯白辉光；平平无奇的灰度无色彩倾向；廉价糖果色
 
 ## 7. 内容与意象 (Content & Metaphor)
 *告别AI的“占位符”和“廉价小图标”，让设计服务于真实业务逻辑。*
@@ -64,4 +65,4 @@
 *在生成过程中，将以下关键词加入负面提示词栏，能大幅削弱 AI 生成的模板感：*
 
 ```text
-grid layout, symmetric, equal spacing, 4-column layout, floating numbers, straight timeline, neon glow, generic tech blue, shiny glass, capsule tags, standard UI, stock illustration, same size fonts, robotic text, over-polished, default gradient, cheap sci-fi, flat corporate style, unnecessary fire icons, repeated patterns, sterile, vector art
+grid layout, symmetric, equal spacing, 4-column layout, floating numbers, straight timeline, neon glow, generic tech blue, shiny glass, capsule tags, standard UI, stock illustration, same size fonts, robotic text, over-polished, default gradient, cheap sci-fi, flat corporate style, unnecessary fire icons, repeated patterns, sterile, vector art, limited palette, monochromatic, blue-purple gradient, candy colors, pure white light, dark blue background, overly saturated rainbow
