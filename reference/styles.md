@@ -61,6 +61,13 @@
 
 ---
 
+### 参考design.md
+
+根据需求类型,按需读取参考的design文件
+
+- 后管系统与工具: `./design/lingxi.md` 或 `./design/agent.md`
+
+
 ### 💡 最终冲刺：终极「负面提示词」清单 (Negative Prompt)
 *在生成过程中，将以下关键词加入负面提示词栏，能大幅削弱 AI 生成的模板感：*
 
