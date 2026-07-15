@@ -92,11 +92,23 @@ node scripts/resume-task.js --project-path <project-path>
 
 恢复顺序是硬规则：
 
-1. 读取 `.webdesign/project.json` 的 `currentTaskId`
-2. 读取对应任务的 `workflow.json`
-3. 优先读取 `.webdesign/tasks/<taskId>/context-save.json`
-4. 若不存在 `context-save.json`，回退到 `01_intake.json` 与 `02_project_state.json`
-5. 若 gate 不是 `DONE`，直接继续下一步；不要等待用户再次描述背景
+1. 先读取项目级 `.webdesign/last-handoff.json`
+2. 若其中的 `taskId` 对应任务存在且 `workflow.currentGate` 不是 `DONE`，优先恢复该任务
+3. 否则回退到 `.webdesign/project.json` 的 `currentTaskId`
+4. 读取选中任务的 `workflow.json`
+5. 优先读取 `.webdesign/tasks/<taskId>/context-save.json`
+6. 若不存在 `context-save.json`，回退到 `01_intake.json` 与 `02_project_state.json`
+7. 若 gate 不是 `DONE`，直接继续下一步；不要等待用户再次描述背景
+
+执行 `/compact` 前也有硬规则：
+
+1. 先向用户发送以下提示语:
+
+```text
+当前上下文即将压缩。我现在执行 /compact。稍后请回复「继续任务」，我会自动恢复到这一步。
+```
+
+2. 然后再执行 `save-context`、输出存档摘要、提示用户 compact 后如何恢复
 
 ## 项目检测
 

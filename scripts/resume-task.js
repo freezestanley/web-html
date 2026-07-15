@@ -4,7 +4,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { detectProjectState } = require("./lib/project-detection");
 const { readProjectMeta } = require("./lib/project-state");
-const { readContextBundle } = require("./lib/task-context");
+const {
+  getLastHandoffPath,
+  getWorkflowPath,
+  readContextBundle,
+  readJsonIfExists
+} = require("./lib/task-context");
 
 function fail(message) {
   process.stderr.write(`${message}\n`);
@@ -41,6 +46,27 @@ function buildFallbackResume(workflow, intake) {
   };
 }
 
+function selectTaskId(projectRoot, preferredTaskId, fallbackTaskId) {
+  const lastHandoff = readJsonIfExists(getLastHandoffPath(projectRoot));
+
+  if (lastHandoff?.taskId) {
+    const workflow = readJsonIfExists(getWorkflowPath(projectRoot, lastHandoff.taskId));
+    if (workflow && workflow.currentGate !== "DONE") {
+      return {
+        taskId: lastHandoff.taskId,
+        taskSelector: "last-handoff",
+        lastHandoff
+      };
+    }
+  }
+
+  return {
+    taskId: preferredTaskId || fallbackTaskId,
+    taskSelector: "current-task",
+    lastHandoff
+  };
+}
+
 const { projectId, projectPath } = parseArgs(process.argv.slice(2));
 
 if (!projectId && !projectPath) {
@@ -63,7 +89,12 @@ if (!fs.existsSync(projectMetaPath)) {
 }
 
 const projectMeta = readProjectMeta(detection.projectRoot);
-const taskId = projectMeta.currentTaskId || detection.currentTaskId;
+const selection = selectTaskId(
+  detection.projectRoot,
+  projectMeta.currentTaskId,
+  detection.currentTaskId
+);
+const taskId = selection.taskId;
 if (!taskId) {
   fail("currentTaskId is missing from project metadata");
 }
@@ -83,6 +114,8 @@ process.stdout.write(
     projectUid: detection.projectUid,
     projectRoot: detection.projectRoot,
     taskId,
+    resumeTaskId: taskId,
+    taskSelector: selection.taskSelector,
     currentGate: workflow.currentGate,
     blocked: workflow.blocked,
     blockReason: workflow.blockReason || "",
@@ -94,6 +127,7 @@ process.stdout.write(
     next: resume.next,
     refs: resume.refs || [],
     resumeSource: contextSave ? "context-save" : "workflow",
+    lastHandoffPath: selection.lastHandoff ? getLastHandoffPath(detection.projectRoot) : "",
     contextSavePath: contextSave ? path.join(detection.projectRoot, ".webdesign", "tasks", taskId, "context-save.json") : "",
     workflowPath: path.join(detection.projectRoot, ".webdesign", "tasks", taskId, "workflow.json"),
     intakePath: path.join(detection.projectRoot, ".webdesign", "tasks", taskId, "01_intake.json"),

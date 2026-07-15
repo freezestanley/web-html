@@ -2,7 +2,12 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { getWorkflowPath, readJson, writeContextSave } = require("./lib/task-context");
+const {
+  getWorkflowPath,
+  readJson,
+  writeContextSave,
+  writeLastHandoff
+} = require("./lib/task-context");
 
 function fail(message) {
   process.stderr.write(`${message}\n`);
@@ -96,6 +101,12 @@ const payload = {
 };
 
 const filePath = writeContextSave(projectPath, taskId, payload);
+const handoffPath = writeLastHandoff(projectPath, {
+  taskId,
+  goal,
+  gate: workflow.currentGate,
+  savedAt
+});
 
 process.stdout.write(
   `${JSON.stringify({
@@ -103,6 +114,7 @@ process.stdout.write(
     projectPath,
     taskId,
     currentGate: workflow.currentGate,
-    filePath
+    filePath,
+    handoffPath
   }, null, 2)}\n`
 );

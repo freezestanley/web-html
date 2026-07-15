@@ -79,6 +79,9 @@ test("save-context writes context-save.json with arrays, gate, and timestamp", (
   assert.equal(result.status, 0, result.stderr);
 
   const saved = JSON.parse(fs.readFileSync(path.join(taskDir, "context-save.json"), "utf8"));
+  const handoff = JSON.parse(
+    fs.readFileSync(path.join(projectPath, ".webdesign", "last-handoff.json"), "utf8")
+  );
   assert.equal(saved.goal, "完成预览确认并准备发布");
   assert.deepEqual(saved.done, ["dist/index.html 已生成", "CDP 已检查控制台错误"]);
   assert.deepEqual(saved.block, ["等待用户确认"]);
@@ -87,7 +90,13 @@ test("save-context writes context-save.json with arrays, gate, and timestamp", (
   assert.equal(saved.gate, "G6_DIST_ASSEMBLED");
   assert.equal(saved.savedAt, "2026-07-12T10:30:00.000Z");
 
+  assert.equal(handoff.taskId, taskId);
+  assert.equal(handoff.goal, "完成预览确认并准备发布");
+  assert.equal(handoff.gate, "G6_DIST_ASSEMBLED");
+  assert.equal(handoff.savedAt, "2026-07-12T10:30:00.000Z");
+
   const output = JSON.parse(result.stdout);
   assert.equal(output.taskId, taskId);
   assert.equal(output.currentGate, "G6_DIST_ASSEMBLED");
+  assert.equal(output.handoffPath, path.join(projectPath, ".webdesign", "last-handoff.json"));
 });
