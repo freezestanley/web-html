@@ -5,9 +5,10 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 
 # html-design
 
-`html-design` 是 `web-html` 的实现层。
-它在 `dist/` 下交付纯 HTML、CSS 与 JS 产物。
-保持默认路径轻量:中小型页面变更应直接在本技能内完成，不要自动加载更重的设计技能。
+`html-design` 是 `web-html` 的 subagent 实现层。
+它默认在 subagent 中运行，在 `dist/` 下交付纯 HTML、CSS 与 JS 产物。
+主会话只负责编排、状态机、验收、用户确认与发布。
+保持默认路径轻量:中小型页面变更应由本 subagent 直接完成，不要自动加载更重的设计技能。
 
 ## 设计规则
 
@@ -15,7 +16,7 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 
 ## 默认路径
 
-当任务属于以下任一类型时，使用直接 HTML/CSS/JS 实现:
+当任务属于以下任一类型时，subagent 使用直接 HTML/CSS/JS 实现:
 
 - 对现有页面的小型或中型编辑
 - 响应式修复
@@ -32,6 +33,26 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 - 任务是整体重设计，而非有边界的页面编辑
 
 若工作主要是编排、元数据或发布相关，请停留在 `web-html`，不要调用本技能。
+
+## Subagent 执行契约
+
+当作为 subagent 执行时，必须:
+
+1. 读取主会话提供的任务描述
+2. 读取本文件
+3. 按需读取 reference 文件
+4. 读取任务上下文文件
+5. 创建或修改 `dist/index.html`
+6. 返回构建摘要
+
+禁止:
+
+- 修改 `workflow.json`
+- 修改 `.webdesign/project.json`
+- 调用 `advance-gate.js`
+- 调用 `publish.js`
+- 输出发布标记
+- 向用户请求预览确认
 
 ## 输入契约
 
@@ -67,7 +88,7 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 2. 选择轻量路径或升级路径
 3. 在 `dist/` 下构建或修补页面
 4. 检查 H5 与 PC 端的响应式表现
-5. 向 `web-html` 返回简洁的实现说明
+5. 向主会话返回简洁的实现说明
 
 ## Reference 按需加载
 
@@ -91,11 +112,12 @@ description: Use when a managed `web-html` project needs pure HTML/CSS/JS page w
 - 仅使用纯 HTML / CSS / JS
 - 禁止引入 React、Vue、Svelte 或任何构建工具假设
 - 禁止直接修改 `.webdesign/project.json` 或工作流状态
+- 禁止调用 `advance-gate.js` 或 `publish.js`
 - 禁止产出发布标记
 - 当外部数据文件更合适时，禁止将大数据集内联到 HTML 中
 - 若交付物需支持 `file://` 协议，禁止假设 HTTP 托管环境
 
-## 回传给 `web-html` 的完成说明
+## 回传给主会话的完成说明
 
 仅返回控制器所需的信息:
 
