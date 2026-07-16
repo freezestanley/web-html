@@ -103,7 +103,8 @@ function main() {
 
   const payload = {
     label: `web-html-build-${taskId}`,
-    runTimeoutSeconds: 180,
+    runTimeoutSeconds: 600,
+    model: process.env.SUBAGENT_MODEL || "za/deepseek-v4-pro",
     task: buildTask({
       projectPath,
       taskId,
