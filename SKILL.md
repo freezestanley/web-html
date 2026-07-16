@@ -45,11 +45,13 @@ description: Use when the user needs a pure HTML/CSS/JS deliverable with project
 - 项目检测
 - 新建 / 续建 / 阻塞路由判断
 - `.webdesign` 元数据与工作流状态
+- `html-design` subagent payload 生成与构建监督
+- subagent 产物检查
 - 预览 / 验收流程
 - 打包与发布脚本调用
 - 最终发布标记处理
 
-### `html-design` 负责
+### `html-design` subagent 负责
 
 - HTML / CSS / JS 实现
 - 响应式行为
@@ -150,15 +152,29 @@ node scripts/init-project.js <project-id> <page-slug> <intent> --name <english-n
 对于 `BROKEN_MANAGED_PROJECT` 与 `UNMANAGED_EXISTING_PROJECT`，必须停止并报告阻塞原因。
 禁止自动导入或自动修复。
 
-## 何时调用 `html-design`
+## html-design Subagent 委派（强制）
 
-仅在页面产出本身需要变更时调用 `html-design`:
+只要页面产物本身需要变更，主会话必须通过 subagent 委派 `html-design`。
+主会话禁止直接执行 HTML/CSS/JS 构建。
+
+触发场景:
 
 - 新页面构建
 - 布局、样式、内容模块或交互变更
 - 预览或浏览器校验后的修复
+- 响应式修复
+- `dist/` 资源调整
 
-以下情况不要调用 `html-design`:
+委派命令:
+
+```bash
+node scripts/build-subagent.js <project-path> <task-id>
+```
+
+主会话使用脚本输出的 JSON payload 调用 `sessions_spawn`。
+Subagent 完成后，主会话检查 `dist/index.html`，然后按合法 gate 顺序继续验收。
+
+以下情况不要委派 `html-design`:
 
 - 项目检测
 - 工作流 / 元数据更新
