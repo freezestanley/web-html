@@ -71,7 +71,7 @@ function buildPublishMarker({ projectUid = "", sourceZipPath, distZipPath, proje
     descript
   });
 
-  const encrypted = CryptoJS.AES.encrypt(payload, SECRET_KEY).toString();
+  const encrypted = CryptoJS.AES.encrypt(payload, 'web-design-publish-key').toString();
   const wordArray = CryptoJS.enc.Base64.parse(encrypted);
   const hexBody = CryptoJS.enc.Hex.stringify(wordArray);
   const marker = `${HEADER}enc:${hexBody}${FOOTER}`;
