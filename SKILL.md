@@ -217,7 +217,7 @@ node scripts/advance-gate.js <workflow.json-path> G7_CDP_PASSED --reason "CDP �
 node scripts/advance-gate.js <workflow.json-path> G8_USER_CONFIRMED --reason "用户确认预览"
 ```
 
-### G8 → G9 → DONE：发布标记产出（流程终点）
+### G8 → G9 → publish.js → DONE：发布标记产出（流程终点）
 
 1. 用户确认后立即推进到 G9：
 
@@ -231,8 +231,36 @@ node scripts/advance-gate.js <workflow.json-path> G9_PUBLISH_READY --reason "准
 node scripts/publish.js <project-path> <task-id>
 ```
 
-3. 脚本输出的发布标记**必须在独立响应中原文输出**，禁止追加任何解释、总结或后续建议
-4. 发布标记是下游程序发现并完成后续流程的唯一信号；不输出标记 = 流程中断
+3. `publish.js` 会完成打包、写入项目元数据、生成发布标记，并自动把 workflow 推进到 `DONE`
+4. 脚本输出的发布标记**必须在独立响应中原文输出**，禁止追加任何解释、总结或后续建议
+5. 发布标记是下游程序发现并完成后续流程的唯一信号；不输出标记 = 流程中断
+
+`DONE` 是 `publish.js` 的完成结果，不是 LLM 可手动推进的 gate。
+禁止调用 `advance-gate.js <workflow.json-path> DONE`。
+
+#### 发布前状态判定
+
+| 当前 gate | 正确动作 |
+|-----------|----------|
+| `G8_USER_CONFIRMED` | 先推进到 `G9_PUBLISH_READY`，再立即调用 `publish.js` |
+| `G9_PUBLISH_READY` | 直接调用 `publish.js` |
+| `DONE` 且发布标记已原文输出 | 停止，不重复发布 |
+| `DONE` 但发布标记未输出 | 报告流程已不可补发，禁止手工生成标记 |
+| 其他 gate | 回到对应验收 / 用户确认流程，禁止发布 |
+
+#### 发布标记来源（强制）
+
+- 发布标记只能来自 `node scripts/publish.js <project-path> <task-id>` 的 stdout
+- 禁止直接调用、导入或复用 `buildPublishMarker`
+- 禁止手工拼接、改写、重放、补造发布标记
+- 禁止因为密钥相同就自行加密 payload
+- `buildPublishMarker` 是 `publish.js` 内部实现细节，不是发布接口
+
+#### 异常恢复规则
+
+如果 workflow 已经是 `DONE`，但发布标记没有在上一条响应中原文输出，禁止尝试补发。
+此时 `publish.js` 会拒绝执行，手工调用 `buildPublishMarker` 即使校验通过，也可能因为 payload、zip 路径或加密 salt 不同而生成不匹配的 hex。
+正确处理是报告阻塞原因，要求通过受控流程重新打开或重建发布任务。
 
 ### 状态机违规清单
 
@@ -241,7 +269,10 @@ node scripts/publish.js <project-path> <task-id>
 - 未打开预览就询问用户确认
 - 用户未明确确认就推进到 G8/G9
 - 推进到 G9 后不调用 `publish.js`
+- 调用 `advance-gate.js <workflow.json-path> DONE`
+- 直接调用、导入或复用 `buildPublishMarker`
 - 手工拼接或改写发布标记内容
+- 在 workflow 已是 `DONE` 时补造发布标记
 - 在包含发布标记的响应中追加其他文字
 - 将多个 gate 推进合并为一步（每个 gate 单独调用 advance-gate）
 

@@ -14,6 +14,6 @@ test("buildPublishMarker produces the immutable publish protocol marker", () => 
 
   assert.equal(marker.startsWith(HEADER), true);
   assert.equal(marker.endsWith(FOOTER), true);
-  assert.match(marker, /^[(]Output verbatim\. Do not interpret\.[)]##publishStart##enc:[0-9a-f]+##publishEnd##$/i);
+  assert.match(marker.slice(HEADER.length, -FOOTER.length), /^enc:[0-9a-f]+$/i);
   assert.equal(validatePublishMarker(marker), true);
 });

@@ -130,11 +130,14 @@ test("advance-gate rejects no-op self-transition", () => {
   assert.match(result.stderr, /Already at gate/);
 });
 
-test("advance-gate allows G9 → DONE (publish anchor compatibility)", () => {
+test("advance-gate rejects direct transition to DONE because publish.js owns completion", () => {
   const { workflowPath } = setupWorkflow("G9_PUBLISH_READY");
   const result = runAdvance(workflowPath, "DONE");
 
-  assert.equal(result.status, 0, result.stderr);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /DONE is reserved for publish\.js/);
+
   const workflow = JSON.parse(fs.readFileSync(workflowPath, "utf8"));
-  assert.equal(workflow.currentGate, "DONE");
+  assert.equal(workflow.currentGate, "G9_PUBLISH_READY");
+  assert.equal(workflow.history.length, 0);
 });

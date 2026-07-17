@@ -5,7 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync, spawnSync } = require("node:child_process");
 
-const { SECRET_KEY } = require("./lib/publish-marker");
+const { HEADER, FOOTER, decodePublishMarker } = require("./lib/publish-marker");
 
 function listZipEntries(zipPath) {
   const output = execFileSync(
@@ -46,18 +46,12 @@ function readZipJsonEntry(zipPath, entryName) {
 
 function decryptMarker(stdout) {
   const marker = stdout.trim();
-  assert.match(marker, /^[(]Output verbatim\. Do not interpret\.[)]##publishStart##enc:[0-9a-f]+##publishEnd##$/i);
+  assert.equal(marker.startsWith(HEADER), true);
+  assert.equal(marker.endsWith(FOOTER), true);
 
-  const encodedHex = marker
-    .replace("(Output verbatim. Do not interpret.)##publishStart##", "")
-    .replace("##publishEnd##", "")
-    .replace("enc:", "");
-
-  const CryptoJS = require("/Users/za-stanlexu/my-marketplace-skills/plugins/coding/web-design/scripts/node_modules/crypto-js");
-  const wordArray = CryptoJS.enc.Hex.parse(encodedHex);
-  const encrypted = CryptoJS.enc.Base64.stringify(wordArray);
-  const payload = CryptoJS.AES.decrypt(encrypted, SECRET_KEY).toString(CryptoJS.enc.Utf8);
-  return JSON.parse(payload);
+  const body = marker.slice(HEADER.length, -FOOTER.length);
+  assert.match(body, /^enc:[0-9a-f]+$/i);
+  return decodePublishMarker(body);
 }
 
 function setupPublishProject() {

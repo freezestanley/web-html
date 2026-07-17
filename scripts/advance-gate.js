@@ -98,6 +98,10 @@ if (currentGate === targetGate) {
   fail(`Already at gate ${currentGate}; no transition needed`);
 }
 
+if (targetGate === "DONE") {
+  fail("DONE is reserved for publish.js; call node scripts/publish.js <project-path> <task-id> from G9_PUBLISH_READY");
+}
+
 if (!isAllowedTransition(currentGate, targetGate, workflow.blocked, gatesConfig)) {
   if (workflow.blocked) {
     const allowed = gatesConfig.blockPolicy?.unblockTargets?.[currentGate] || [];
