@@ -232,11 +232,41 @@ node scripts/publish.js <project-path> <task-id>
 ```
 
 3. `publish.js` 会完成打包、写入项目元数据、生成发布标记，并自动把 workflow 推进到 `DONE`
-4. 脚本输出的发布标记**必须在独立响应中原文输出**，禁止追加任何解释、总结或后续建议
-5. 发布标记是下游程序发现并完成后续流程的唯一信号；不输出标记 = 流程中断
+4. 脚本输出的发布标记**必须在下一条独立响应中原文输出**，禁止追加任何解释、总结或后续建议
+5. 发布标记响应发出后，当前任务即完成；不要再发送发布说明、产物摘要或完成确认
+6. 发布标记是下游程序发现并完成后续流程的唯一信号；不输出标记 = 流程中断
 
 `DONE` 是 `publish.js` 的完成结果，不是 LLM 可手动推进的 gate。
 禁止调用 `advance-gate.js <workflow.json-path> DONE`。
+
+#### 发布完成响应协议（强制）
+
+发布阶段不是汇报阶段，而是发送机器协议帧。
+一旦 `publish.js` 成功输出发布标记，下一条 assistant 响应必须满足:
+
+- 完整内容等于 `publish.js` 的 `stdout.trim()`
+- 响应第一字符必须是 `#`
+- 响应最后一个字符必须是 `)`
+- 响应整体必须匹配 `^##publishStart##enc:[0-9a-f]+##publishEnd##\(Output verbatim\. Do not interpret\)$`
+- 不允许前置标题、后置说明、markdown 代码块、表格、列表、引用块、状态文字或空行
+
+匹配正则只用于发送前静默自检，不是生成模板。
+禁止根据正则自行编造发布标记；只能复制 `publish.js` stdout。
+
+发布标记响应就是任务完成响应。
+不要在同一条或后一条消息中补充“发布成功”“任务完成”“产物如下”等面向用户的说明。
+
+#### 发布标记裁剪禁令
+
+以下都不是发布标记，禁止输出:
+
+- 只输出 `enc:` 开头的内部加密体
+- 只输出十六进制内容
+- 输出占位内容，例如把 payload、hex 或 body 写成占位文本
+- 缺少 `##publishStart##`
+- 缺少 `##publishEnd##(Output verbatim. Do not interpret)`
+- 调换 header、body、footer 顺序
+- 对脚本 stdout 做截取、补全、重排或格式化
 
 #### 发布前状态判定
 
@@ -251,6 +281,7 @@ node scripts/publish.js <project-path> <task-id>
 #### 发布标记来源（强制）
 
 - 发布标记只能来自 `node scripts/publish.js <project-path> <task-id>` 的 stdout
+- 最终 assistant 响应必须完整等于该 stdout 去掉末尾换行后的字符串
 - 禁止直接调用、导入或复用 `buildPublishMarker`
 - 禁止手工拼接、改写、重放、补造发布标记
 - 禁止因为密钥相同就自行加密 payload
@@ -272,6 +303,10 @@ node scripts/publish.js <project-path> <task-id>
 - 调用 `advance-gate.js <workflow.json-path> DONE`
 - 直接调用、导入或复用 `buildPublishMarker`
 - 手工拼接或改写发布标记内容
+- 只输出内部 `enc:` 加密体或十六进制片段
+- 用占位文本代替真实 hex/body/payload
+- 用 markdown 代码块包裹发布标记
+- 在发布标记前添加标题、状态、表格、页面结构或产物摘要
 - 在 workflow 已是 `DONE` 时补造发布标记
 - 在包含发布标记的响应中追加其他文字
 - 将多个 gate 推进合并为一步（每个 gate 单独调用 advance-gate）
@@ -285,6 +320,8 @@ node scripts/publish.js <project-path> <task-id>
 - 预览 URL 或路径
 - 是否需要用户确认
 - 最终发布结果
+
+发布阶段例外:最终响应只输出完整发布标记，不输出上述任何面向用户的内容。
 
 ## 安装与环境
 
