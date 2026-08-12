@@ -35,17 +35,26 @@
 **HANDOFF 正确顺序:**
 1. 先向用户发送以下提示语，再执行任何存档动作:
    > 当前上下文即将压缩。我现在执行 `/compact`。稍后请回复「继续任务」，我会自动恢复到这一步。
-2. 调用 `gate.js advance/block/reopen-dev` 把当前状态写回 `workflow.json`
-3. 调用 `scripts/save-context.js` 将恢复摘要写入当前任务的 `context-save.json`，并同步写入项目级 `.webdesign/last-handoff.json`
-4. 输出 `CONTEXT_SAVE` 摘要块（格式见下）
-5. **必须**在摘要块之后追加以下固定提示语，一字不差:
+2. 调用 `scripts/save-context.js`（或 `scripts/gate.js check-advance <project-path> --save-only`）落存档：写入当前任务的 `context-save.json` 并同步 `.webdesign/last-handoff.json`。**HANDOFF 是压缩存档点，不是业务 gate — 不要调 `advance-gate.js`，`workflow.currentGate` 保持业务 gate 不动。**
+3. 输出 `CONTEXT_SAVE` 摘要块（格式见下）
+4. **必须**在摘要块之后追加以下固定提示语，一字不差:
    > 存档完毕。执行 `/compact` 后，在新对话中回复「继续任务」即可恢复进度。
-6. 调用 `/compact` 清理上下文
-7. 在新上下文中按以下优先级恢复:
+5. 调用 `/compact` 清理上下文
+6. 在新上下文中按以下优先级恢复:
    - 先读取项目级 `.webdesign/last-handoff.json`
    - 若其中的 `taskId` 对应任务存在且 `workflow.currentGate` 不是 `DONE`，优先恢复该任务
    - 否则回退到 `.webdesign/project.json.currentTaskId`
    - 选定任务后，优先读取该任务的 `context-save.json`；若不存在，再回退到 `workflow.json`、`01_intake.json`、`02_project_state.json`
+
+## 全自动闭环（cron + heartbeat + 插件）
+
+除上面的手动 HANDOFF 外，还有一层零打扰自动闭环。**三者不是"互为兜底"，而是共享同一前提（session.json 已登记）——前提缺失时三者同时失效。** 这是必须先登记会话的原因：
+
+- **cron 定时作业（确定性、零 model 成本）**：`openclaw cron add --every 10m --command "node scripts/gate.js check-advance <project> --compact-threshold 120000"`。读 `.webdesign/session.json` 拿 sessionKey，token 超阈值则落存档并 compact；compact 成功写 `compactState:"compacted"` 到 last-handoff，失败以非零退出。
+- **HEARTBEAT.md（LLM 自执行，双判据）**：判据②先查 `gate.js check-resume`（有 compacted 待恢复态就 resume），判据①再查阈值决定是否压缩。两判据独立，compact 后 token 低也不会漏掉恢复。检测到活跃任务但 session 未登记时主动补登记。
+- **context-handoff 插件（外部依赖，源码不在本仓库）**：`before_compaction` 落最小存档；`after_compaction` 用 `enqueueNextTurnInjection` 注入"运行 resume-task.js 恢复"。插件缺失/失败时，唯一兜底是 HEARTBEAT 判据②（依赖外部 heartbeat 调度真的会触发，代码无法保证）。
+
+**闭环隐含前提**：至少一个外部调度器（cron 或 heartbeat）持续存活并唤醒。进程被 kill、调度器停用且无用户新消息时，闭环断裂——这是部署约定，非代码可保证。
 
 `save-context.js` 示例:
 

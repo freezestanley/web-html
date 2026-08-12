@@ -294,3 +294,52 @@ test("resume-task falls back to currentTaskId when the last handoff task is done
   assert.equal(output.resumeTaskId, currentTaskId);
   assert.equal(output.taskSelector, "current-task");
 });
+
+// 缺陷B：损坏的 last-handoff.json 视同不存在，降级到 currentTaskId 恢复，而非崩溃。
+test("resume-task degrades to currentTaskId when last-handoff.json is corrupt", () => {
+  const { tempDir, projectId, projectPath, taskId } = createManagedProjectFixture();
+  fs.writeFileSync(path.join(projectPath, ".webdesign", "last-handoff.json"), "{ 这不是合法JSON ]");
+  const result = runResume(projectId, tempDir);
+
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "ready");
+  assert.equal(output.taskId, taskId);
+  assert.equal(output.taskSelector, "current-task");
+});
+
+// 缺陷B：损坏的 context-save.json 视同不存在，回退到 workflow/intake，而非崩溃。
+test("resume-task degrades to workflow fallback when context-save.json is corrupt", () => {
+  const { tempDir, projectId, projectPath, taskId } = createManagedProjectFixture();
+  fs.writeFileSync(path.join(projectPath, ".webdesign", "tasks", taskId, "context-save.json"), "{corrupt");
+  const result = runResume(projectId, tempDir);
+
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "ready");
+  assert.equal(output.resumeSource, "workflow");
+});
+
+// 缺陷B：损坏的 workflow.json 输出结构化 unrecoverable（exit 2），而非裸抛异常。
+test("resume-task reports unrecoverable when workflow.json is corrupt", () => {
+  const { tempDir, projectId, projectPath, taskId } = createManagedProjectFixture();
+  fs.writeFileSync(path.join(projectPath, ".webdesign", "tasks", taskId, "workflow.json"), "not json at all");
+  const result = runResume(projectId, tempDir);
+
+  assert.equal(result.status, 2);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "unrecoverable");
+  assert.equal(output.reason, "workflow-missing-or-corrupt");
+});
+
+// 缺陷B：损坏的 project.json 输出结构化 unrecoverable（exit 2），而非裸抛异常。
+test("resume-task reports unrecoverable when project.json is corrupt", () => {
+  const { tempDir, projectId, projectPath } = createManagedProjectFixture();
+  fs.writeFileSync(path.join(projectPath, ".webdesign", "project.json"), "{ broken");
+  const result = runResume(projectId, tempDir);
+
+  assert.equal(result.status, 2);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.status, "unrecoverable");
+  assert.equal(output.reason, "project-json-corrupt");
+});

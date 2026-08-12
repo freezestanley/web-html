@@ -153,7 +153,7 @@ test("build-subagent emits an html-design subagent payload for a managed task", 
 
   const output = JSON.parse(result.stdout);
   assert.equal(output.label, `web-html-build-${taskId}`);
-  assert.equal(output.runTimeoutSeconds, 180);
+  assert.equal(output.runTimeoutSeconds, 600);
   assert.equal(typeof output.task, "string");
 
   for (const expectedText of [

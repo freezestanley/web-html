@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { loadConfig } = require("./load-config");
+const { writeFileAtomic } = require("./atomic-write");
 
 const config = loadConfig();
 
@@ -16,7 +17,7 @@ function readProjectMeta(projectPath) {
 function writeProjectMeta(projectPath, meta) {
   const webdesignDir = path.join(projectPath, config.WEBDESIGN_DIR);
   fs.mkdirSync(webdesignDir, { recursive: true });
-  fs.writeFileSync(getProjectMetaPath(projectPath), JSON.stringify(meta, null, 2));
+  writeFileAtomic(getProjectMetaPath(projectPath), JSON.stringify(meta, null, 2));
 }
 
 function generateProjectUid() {

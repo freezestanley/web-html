@@ -63,7 +63,18 @@ function detectProjectState({ projectId, projectPath, projectsDir = config.PROJE
     };
   }
 
-  const projectMeta = JSON.parse(fs.readFileSync(files.projectMetaPath, "utf8"));
+  // 缺陷B：project.json 损坏时判为 BROKEN_MANAGED_PROJECT，不裸抛。
+  let projectMeta;
+  try {
+    projectMeta = JSON.parse(fs.readFileSync(files.projectMetaPath, "utf8"));
+  } catch (error) {
+    return {
+      ...result,
+      projectType: "BROKEN_MANAGED_PROJECT",
+      projectMode: "blocked",
+      blockReason: "project.json 损坏，无法解析"
+    };
+  }
   return {
     ...result,
     projectType: "CONTINUE_MANAGED_PROJECT",

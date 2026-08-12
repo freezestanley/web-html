@@ -79,6 +79,7 @@ Gate 名称是内部状态。
 - `detect-project` 结果为 `CONTINUE_MANAGED_PROJECT`
 - 用户明确表示“继续任务 / 恢复 / 接着做”
 - 当前任务 `workflow.json.currentGate` 不是 `DONE`
+- **收到系统注入的“上下文已压缩…运行 resume-task.js”提示**（来自 context-handoff 插件的自动 handoff）；收到即执行，不要询问用户
 
 恢复命令：
 
@@ -101,6 +102,25 @@ node scripts/resume-task.js --project-path <project-path>
 5. 优先读取 `.webdesign/tasks/<taskId>/context-save.json`
 6. 若不存在 `context-save.json`，回退到 `01_intake.json` 与 `02_project_state.json`
 7. 若 gate 不是 `DONE`，直接继续下一步；不要等待用户再次描述背景
+
+统一恢复入口（手动 `/compact` 或自动 handoff 后都用它）：
+
+```bash
+node scripts/resume-task.js --project-path <project-path>
+```
+
+context-handoff 插件会在 compact 后自动注入恢复提示；收到即执行，不要问用户。
+
+## 开工登记（强制）
+
+`detect-project` 结果为 `CONTINUE_MANAGED_PROJECT` 或新建项目成功后，第一步登记当前会话，
+让 cron 定时作业与 compaction 插件能定位到本会话，实现零打扰自动 handoff：
+
+```bash
+node scripts/session-state.js set <project-path> --session-key <当前 sessionKey>
+```
+
+sessionKey 从环境变量（`SESSION_KEY`/`SESSION`）读取；省略 `--session-key` 时脚本会自动回退到该环境变量。
 
 执行 `/compact` 前也有硬规则：
 
